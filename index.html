@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chatbot with RAG Pipeline</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Left Panel -->
+        <div class="left-panel">
+            <div class="panel-header">
+                <h2><i class="fas fa-upload"></i> Document & Results</h2>
+            </div>
+            
+            <!-- PDF Upload Section -->
+            <div class="upload-section">
+                <h3>Upload PDF Documents</h3>
+                <div class="upload-area" id="uploadArea">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <p>Drag and drop PDF files here or click to select</p>
+                    <input type="file" id="pdfInput" accept=".pdf" multiple hidden>
+                    <button class="upload-btn" onclick="document.getElementById('pdfInput').click()">
+                        Choose Files
+                    </button>
+                </div>
+                <div class="uploaded-files" id="uploadedFiles"></div>
+            </div>
+
+            <!-- Image Display Section -->
+            <div class="image-section" id="imageSection" style="display: none;">
+                <h3>Generated Image</h3>
+                <div class="image-container">
+                    <img id="generatedImage" src="" alt="Generated Image">
+                </div>
+            </div>
+
+            <!-- Checklist Section -->
+            <div class="checklist-section" id="checklistSection" style="display: none;">
+                <h3>Analysis Results</h3>
+                <div class="checklist-container" id="checklistContainer">
+                    <!-- Checklist items will be populated here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel - Chat Interface -->
+        <div class="right-panel">
+            <div class="panel-header">
+                <h2><i class="fas fa-comments"></i> Chat Interface</h2>
+            </div>
+            
+            <!-- Chat Messages Area -->
+            <div class="chat-messages" id="chatMessages">
+                <div class="message bot-message">
+                    <div class="message-avatar">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="message-content">
+                        <p>Hello! I'm your AI assistant. Upload a PDF document and ask me questions about it, or request image generation.</p>
+                    </div>
+                    <div class="message-time">Just now</div>
+                </div>
+            </div>
+
+            <!-- Chat Input Area -->
+            <div class="chat-input-area">
+                <div class="input-container">
+                    <textarea 
+                        id="messageInput" 
+                        placeholder="Type your message here..."
+                        rows="1"
+                    ></textarea>
+                    <button id="sendButton" class="send-btn">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+                <div class="input-info">
+                    <small>Press Enter to send, Shift+Enter for new line</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Processing your request...</p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
