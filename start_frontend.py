@@ -12,7 +12,7 @@ import sys
 # Change to the directory containing the HTML files
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-PORT = 5598
+PORT = 5599
 
 class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
     def end_headers(self):

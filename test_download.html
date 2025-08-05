@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test PDF Download</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+    <h1>Test PDF Download</h1>
+    <button onclick="testDownload()">Test PDF Download</button>
+    <button onclick="testHTMLDownload()">Test HTML Download</button>
+    <div id="result"></div>
+
+    <script>
+        function testDownload() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testing PDF download...';
+            
+            try {
+                console.log('window.jspdf:', window.jspdf);
+                
+                if (typeof window.jspdf === 'undefined') {
+                    resultDiv.innerHTML = 'ERROR: jsPDF library not loaded';
+                    return;
+                }
+
+                const { jsPDF } = window.jspdf;
+                console.log('jsPDF:', jsPDF);
+                
+                const pdf = new jsPDF();
+                pdf.setFontSize(16);
+                pdf.text('Test PDF Download', 20, 20);
+                pdf.text('This is a test to verify jsPDF is working.', 20, 40);
+                
+                pdf.save('test-download.pdf');
+                resultDiv.innerHTML = 'PDF download should have started!';
+                
+            } catch (error) {
+                console.error('Error:', error);
+                resultDiv.innerHTML = 'ERROR: ' + error.message;
+            }
+        }
+        
+        function testHTMLDownload() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testing HTML download...';
+            
+            try {
+                const htmlContent = `
+                    <!DOCTYPE html>
+                    <html>
+                    <head><title>Test HTML</title></head>
+                    <body><h1>Test HTML Download</h1><p>This is a test.</p></body>
+                    </html>
+                `;
+                
+                const blob = new Blob([htmlContent], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'test-download.html';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                resultDiv.innerHTML = 'HTML download should have started!';
+                
+            } catch (error) {
+                console.error('Error:', error);
+                resultDiv.innerHTML = 'ERROR: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>

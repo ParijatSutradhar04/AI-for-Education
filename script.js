@@ -1,8 +1,12 @@
 class EducationAssistantUI {
     constructor() {
-        // Initialize persistent logging first
+        // Initialize simplified logging for production
         this.initializePersistentLogging();
         this.persistentLog('=== EDUCATION ASSISTANT UI STARTING ===');
+        
+        // Define backend URL
+        this.BACKEND_URL = 'http://localhost:5000';
+        this.persistentLog(`Backend URL set to: ${this.BACKEND_URL}`);
         
         this.initializeElements();
         this.setupEventListeners();
@@ -19,54 +23,28 @@ class EducationAssistantUI {
         this.zoomStep = 0.25;
         // Set to false to use real backend, true for simulation
         this.useSimulation = false;
+        this.sendingMessage = false; // Prevent multiple simultaneous requests
         
         this.persistentLog('Education Assistant UI initialized successfully');
     }
 
+    // Simplified debug logging for production
     initializePersistentLogging() {
-        // Create a persistent logging system that survives page refreshes
-        this.logKey = 'educationAssistant_logs';
-        this.maxLogs = 100; // Keep last 100 log entries
-        
-        // Load existing logs
-        this.loadLogs();
-        
-        // Create visible log panel
-        this.createLogPanel();
+        // Debug overlay disabled for production
+        console.log('Debug logging initialized in simple mode');
     }
     
     persistentLog(message, type = 'log') {
-        const timestamp = new Date().toISOString();
-        const logEntry = {
-            timestamp,
-            message,
-            type
-        };
-        
-        // Store in memory
-        if (!this.logs) this.logs = [];
-        this.logs.push(logEntry);
-        
-        // Keep only recent logs
-        if (this.logs.length > this.maxLogs) {
-            this.logs = this.logs.slice(-this.maxLogs);
-        }
-        
-        // Store in localStorage
-        this.saveLogs();
-        
-        // Display in console
-        const formattedMessage = `[${timestamp}] ${message}`;
+        // Simple console logging for production
         if (type === 'error') {
-            console.error(formattedMessage);
+            console.error(`[UI] ${message}`);
         } else {
-            console.log(formattedMessage);
+            console.log(`[UI] ${message}`);
         }
-        
-        // Update log panel
-        this.updateLogPanel();
     }
     
+    // DEBUG OVERLAY METHODS - COMMENTED OUT FOR PRODUCTION
+    /*
     loadLogs() {
         try {
             const storedLogs = localStorage.getItem(this.logKey);
@@ -85,151 +63,17 @@ class EducationAssistantUI {
     }
     
     createLogPanel() {
-        // Create a floating log panel for debugging
-        this.logPanel = document.createElement('div');
-        this.logPanel.id = 'debugLogPanel';
-        this.logPanel.style.cssText = `
-            position: fixed;
-            bottom: 10px;
-            right: 10px;
-            width: 450px;
-            height: 200px;
-            background: rgba(0, 0, 0, 0.95);
-            color: #00ff00;
-            font-family: 'Courier New', monospace;
-            font-size: 11px;
-            padding: 15px;
-            border-radius: 8px;
-            z-index: 10000;
-            overflow-y: auto;
-            display: block;
-            border: 2px solid #00ff00;
-            box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
-            backdrop-filter: blur(5px);
-        `;
-        
-        // Add header to the log panel
-        const header = document.createElement('div');
-        header.innerHTML = '🐛 DEBUG LOGS - Application Activity Monitor';
-        header.style.cssText = `
-            color: #ffff00;
-            font-weight: bold;
-            margin-bottom: 10px;
-            padding-bottom: 5px;
-            border-bottom: 1px solid #333;
-            text-align: center;
-        `;
-        this.logPanel.appendChild(header);
-        
-        // Create content area
-        this.logContent = document.createElement('div');
-        this.logContent.id = 'logContent';
-        this.logPanel.appendChild(this.logContent);
-        
-        // Add toggle button
-        this.logToggle = document.createElement('button');
-        this.logToggle.innerHTML = '🐛 DEBUG LOGS';
-        this.logToggle.title = 'Toggle Debug Logs - Click to see application logs';
-        this.logToggle.id = 'debugToggleBtn';
-        this.logToggle.style.cssText = `
-            position: fixed;
-            bottom: 220px;
-            right: 10px;
-            padding: 8px 15px;
-            background: rgba(0, 0, 0, 0.9);
-            color: #00ff00;
-            border: 2px solid #00ff00;
-            border-radius: 8px;
-            cursor: pointer;
-            z-index: 10001;
-            font-size: 12px;
-            font-family: monospace;
-            font-weight: bold;
-            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
-            transition: all 0.2s ease;
-        `;
-        
-        this.logToggle.onmouseover = () => {
-            this.logToggle.style.background = 'rgba(0, 255, 0, 0.2)';
-            this.logToggle.style.transform = 'scale(1.05)';
-        };
-        
-        this.logToggle.onmouseout = () => {
-            this.logToggle.style.background = 'rgba(0, 0, 0, 0.9)';
-            this.logToggle.style.transform = 'scale(1.0)';
-        };
-        
-        this.logToggle.onclick = (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            const isVisible = this.logPanel.style.display !== 'none';
-            this.logPanel.style.display = isVisible ? 'none' : 'block';
-            this.logToggle.innerHTML = isVisible ? '🐛 DEBUG LOGS' : '🐛 HIDE LOGS';
-            this.persistentLog(`Debug panel ${isVisible ? 'hidden' : 'shown'}`);
-        };
-        
-        // Add clear button
-        this.clearLogBtn = document.createElement('button');
-        this.clearLogBtn.innerHTML = '🗑️ CLEAR';
-        this.clearLogBtn.title = 'Clear Debug Logs';
-        this.clearLogBtn.id = 'debugClearBtn';
-        this.clearLogBtn.style.cssText = `
-            position: fixed;
-            bottom: 220px;
-            right: 150px;
-            padding: 8px 12px;
-            background: rgba(0, 0, 0, 0.9);
-            color: #ff4444;
-            border: 2px solid #ff4444;
-            border-radius: 8px;
-            cursor: pointer;
-            z-index: 10001;
-            font-size: 10px;
-            font-family: monospace;
-            font-weight: bold;
-            transition: all 0.2s ease;
-        `;
-        
-        this.clearLogBtn.onmouseover = () => {
-            this.clearLogBtn.style.background = 'rgba(255, 68, 68, 0.2)';
-        };
-        
-        this.clearLogBtn.onmouseout = () => {
-            this.clearLogBtn.style.background = 'rgba(0, 0, 0, 0.9)';
-        };
-        
-        this.clearLogBtn.onclick = (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            this.clearLogs();
-        };
-        
-        document.body.appendChild(this.logPanel);
-        document.body.appendChild(this.logToggle);
-        document.body.appendChild(this.clearLogBtn);
-        
-        this.updateLogPanel();
+        // Debug overlay disabled for production
     }
     
     updateLogPanel() {
-        if (!this.logContent || !this.logs) return;
-        
-        const logHtml = this.logs.slice(-25).map(log => {
-            const time = new Date(log.timestamp).toLocaleTimeString();
-            const color = log.type === 'error' ? '#ff4444' : '#00ff00';
-            return `<div style="color: ${color}; margin-bottom: 3px; padding: 2px; border-left: 2px solid ${color}; padding-left: 8px;">[${time}] ${log.message}</div>`;
-        }).join('');
-        
-        this.logContent.innerHTML = logHtml;
-        this.logPanel.scrollTop = this.logPanel.scrollHeight;
+        // Debug overlay disabled for production
     }
     
     clearLogs() {
-        this.logs = [];
-        this.saveLogs();
-        this.updateLogPanel();
-        this.persistentLog('Debug logs cleared');
+        // Debug overlay disabled for production
     }
+    */
 
     initializeElements() {
         // Chat elements
@@ -259,6 +103,15 @@ class EducationAssistantUI {
         this.canvasContent = document.getElementById('canvasContent');
         this.downloadCanvasBtn = document.getElementById('downloadCanvasBtn');
         
+        // Debug: Check if download button was found
+        if (this.downloadCanvasBtn) {
+            console.log('Download canvas button found successfully');
+            this.persistentLog('Download canvas button found successfully');
+        } else {
+            console.error('Download canvas button NOT found!');
+            this.persistentLog('Download canvas button NOT found!', 'error');
+        }
+        
         // Form elements
         this.teacherLanguage = document.getElementById('teacherLanguage');
         this.studentLanguage = document.getElementById('studentLanguage');
@@ -273,7 +126,8 @@ class EducationAssistantUI {
     // Chat functionality - simplified and cleaned up event handling
         this.sendButton.addEventListener('click', (e) => {
             this.persistentLog('Send button clicked');
-            e.preventDefault();
+            // No need to preventDefault since button is type="button"
+            // e.preventDefault();
             e.stopPropagation();
             this.sendMessage();
         });
@@ -359,9 +213,28 @@ class EducationAssistantUI {
 
         // Canvas functionality
         this.downloadCanvasBtn.addEventListener('click', (e) => {
+            console.log('Download canvas button clicked!');
+            this.persistentLog('Download canvas button clicked');
+            console.log('Canvas items count:', this.canvasItems.length);
+            this.persistentLog(`Canvas items count: ${this.canvasItems.length}`);
             e.preventDefault();
+            e.stopPropagation();
             this.downloadCanvasPdf();
         });
+    }
+
+    // Add a test method to create sample canvas items for testing
+    addTestCanvasItem() {
+        const testItem = {
+            id: Date.now(),
+            question: "This is a test question",
+            response: "This is a test response for debugging the download feature.",
+            timestamp: this.getCurrentTime()
+        };
+        this.canvasItems.push(testItem);
+        this.renderCanvas();
+        this.showNotification('Test item added to canvas', 'info');
+        console.log('Test canvas item added');
     }
 
     autoResizeTextarea() {
@@ -371,8 +244,19 @@ class EducationAssistantUI {
 
     async sendMessage() {
         try {
+            // Prevent multiple simultaneous requests
+            if (this.sendingMessage) {
+                this.persistentLog('Message sending already in progress, ignoring duplicate request');
+                return;
+            }
+            
+            this.sendingMessage = true;
+            
             const message = this.messageInput.value.trim();
-            if (!message) return;
+            if (!message) {
+                this.sendingMessage = false;
+                return;
+            }
 
             this.persistentLog('=== SEND MESSAGE START ===');
             this.persistentLog(`Sending message: ${message}`);
@@ -407,6 +291,7 @@ class EducationAssistantUI {
             }
             
             this.persistentLog('=== SEND MESSAGE END ===');
+            this.sendingMessage = false;
             
         } catch (error) {
             this.persistentLog('=== ERROR IN SEND MESSAGE ===', 'error');
@@ -414,6 +299,7 @@ class EducationAssistantUI {
             this.addMessage('Sorry, there was an error processing your request. Please try again.', 'bot');
             this.showNotification('Failed to connect to backend', 'error');
             this.hideLoading();
+            this.sendingMessage = false;
         }
     }
 
@@ -589,94 +475,207 @@ class EducationAssistantUI {
     }
 
     async downloadCanvasPdf() {
+        console.log('=== DOWNLOAD CANVAS PDF START ===');
+        this.persistentLog('Download canvas PDF button clicked');
+        
         if (this.canvasItems.length === 0) {
+            console.log('No canvas items to download');
             this.showNotification('No notes to download', 'warning');
             return;
         }
 
+        console.log(`Canvas items to download: ${this.canvasItems.length}`);
+        this.persistentLog(`Canvas items: ${this.canvasItems.length}`);
+
         try {
-            const { jsPDF } = window.jspdf || {};
-            if (!jsPDF) {
-                // Fallback: download as HTML
+            // Check if jsPDF is available
+            console.log('Checking jsPDF availability...');
+            console.log('window.jspdf:', window.jspdf);
+            console.log('typeof window.jspdf:', typeof window.jspdf);
+            
+            if (typeof window.jspdf === 'undefined') {
+                console.error('jsPDF library not loaded');
+                this.persistentLog('jsPDF library not loaded', 'error');
+                this.showNotification('PDF library not available, downloading as HTML instead', 'warning');
                 this.downloadAsHtml();
                 return;
             }
 
+            console.log('jsPDF available, proceeding with PDF generation...');
+            const { jsPDF } = window.jspdf;
+            console.log('jsPDF constructor:', jsPDF);
+            
             const pdf = new jsPDF();
+            console.log('PDF object created successfully');
+            
             let yPosition = 20;
+            const pageHeight = pdf.internal.pageSize.height;
+            const margin = 20;
+            const maxWidth = 170;
+
+            console.log(`Page height: ${pageHeight}, margin: ${margin}, maxWidth: ${maxWidth}`);
 
             // Add title
             pdf.setFontSize(16);
-            pdf.text('AI Education Assistant - Notes', 20, yPosition);
-            yPosition += 20;
+            pdf.setFont(undefined, 'bold');
+            pdf.text('AI Education Assistant - Notes', margin, yPosition);
+            yPosition += 25;
+            console.log('Title added to PDF');
 
             this.canvasItems.forEach((item, index) => {
-                // Check if we need a new page
-                if (yPosition > 250) {
+                console.log(`Processing item ${index + 1}/${this.canvasItems.length}`);
+                
+                // Check if we need a new page (leave room for content)
+                if (yPosition > pageHeight - 60) {
                     pdf.addPage();
                     yPosition = 20;
+                    console.log('Added new page');
                 }
 
+                // Note header
                 pdf.setFontSize(12);
-                pdf.text(`Note ${index + 1} - ${item.timestamp}`, 20, yPosition);
+                pdf.setFont(undefined, 'bold');
+                pdf.text(`Note ${index + 1} - ${item.timestamp}`, margin, yPosition);
                 yPosition += 15;
 
+                // Question
                 pdf.setFontSize(10);
-                const questionLines = pdf.splitTextToSize(`Q: ${item.question}`, 170);
-                pdf.text(questionLines, 20, yPosition);
-                yPosition += questionLines.length * 5 + 5;
+                pdf.setFont(undefined, 'bold');
+                const questionText = `Q: ${item.question}`;
+                const questionLines = pdf.splitTextToSize(questionText, maxWidth);
+                pdf.text(questionLines, margin, yPosition);
+                yPosition += questionLines.length * 6 + 5;
 
-                const responseLines = pdf.splitTextToSize(`A: ${item.response}`, 170);
-                pdf.text(responseLines, 20, yPosition);
-                yPosition += responseLines.length * 5 + 15;
+                // Answer
+                pdf.setFont(undefined, 'normal');
+                const responseText = `A: ${item.response}`;
+                const responseLines = pdf.splitTextToSize(responseText, maxWidth);
+                
+                // Check if response will fit on current page
+                if (yPosition + responseLines.length * 6 > pageHeight - 20) {
+                    pdf.addPage();
+                    yPosition = 20;
+                    console.log('Added new page for response');
+                }
+                
+                pdf.text(responseLines, margin, yPosition);
+                yPosition += responseLines.length * 6 + 20;
             });
 
-            pdf.save('ai-education-notes.pdf');
+            // Generate filename with timestamp
+            const timestamp = new Date().toISOString().slice(0, 10);
+            const filename = `ai-education-notes-${timestamp}.pdf`;
+            
+            console.log(`Saving PDF as: ${filename}`);
+            pdf.save(filename);
+            console.log('PDF save() method called');
+            
             this.showNotification('PDF downloaded successfully!', 'success');
+            this.persistentLog('PDF download completed successfully');
+            
         } catch (error) {
             console.error('Error generating PDF:', error);
+            this.persistentLog(`Error generating PDF: ${error.message}`, 'error');
+            this.showNotification('Error generating PDF, downloading as HTML instead', 'warning');
             this.downloadAsHtml();
         }
+        
+        console.log('=== DOWNLOAD CANVAS PDF END ===');
     }
 
     downloadAsHtml() {
+        const timestamp = new Date().toISOString().slice(0, 10);
+        
         let htmlContent = `
+            <!DOCTYPE html>
             <html>
             <head>
-                <title>AI Education Assistant - Notes</title>
+                <title>AI Education Assistant - Notes - ${timestamp}</title>
+                <meta charset="UTF-8">
                 <style>
-                    body { font-family: Arial, sans-serif; margin: 20px; }
-                    .note { margin-bottom: 30px; padding: 20px; border-left: 4px solid #667eea; background: #f8f9ff; }
-                    .question { background: #e3f2fd; padding: 10px; margin-bottom: 10px; border-radius: 5px; }
-                    .response { line-height: 1.6; }
-                    .timestamp { font-size: 12px; color: #666; margin-bottom: 10px; }
+                    body { 
+                        font-family: Arial, sans-serif; 
+                        margin: 40px; 
+                        line-height: 1.6;
+                        color: #333;
+                    }
+                    .header {
+                        text-align: center;
+                        margin-bottom: 40px;
+                        border-bottom: 2px solid #667eea;
+                        padding-bottom: 20px;
+                    }
+                    .note { 
+                        margin-bottom: 30px; 
+                        padding: 20px; 
+                        border-left: 4px solid #667eea; 
+                        background: #f8f9ff;
+                        border-radius: 5px;
+                        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+                    }
+                    .question { 
+                        background: #e3f2fd; 
+                        padding: 15px; 
+                        margin-bottom: 15px; 
+                        border-radius: 5px;
+                        font-weight: bold;
+                    }
+                    .response { 
+                        line-height: 1.8;
+                        padding: 10px;
+                    }
+                    .timestamp { 
+                        font-size: 12px; 
+                        color: #666; 
+                        margin-bottom: 15px;
+                        font-style: italic;
+                    }
+                    .note-number {
+                        color: #667eea;
+                        font-weight: bold;
+                    }
                 </style>
             </head>
             <body>
-                <h1>AI Education Assistant - Notes</h1>
+                <div class="header">
+                    <h1>🎓 AI Education Assistant - Notes</h1>
+                    <p>Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</p>
+                </div>
         `;
 
         this.canvasItems.forEach((item, index) => {
             htmlContent += `
                 <div class="note">
-                    <div class="timestamp">Note ${index + 1} - ${item.timestamp}</div>
-                    <div class="question"><strong>Q:</strong> ${item.question}</div>
-                    <div class="response"><strong>A:</strong> ${item.response}</div>
+                    <div class="timestamp"><span class="note-number">Note ${index + 1}</span> - ${item.timestamp}</div>
+                    <div class="question">📝 <strong>Question:</strong> ${this.escapeHtml(item.question)}</div>
+                    <div class="response">💡 <strong>Answer:</strong> ${this.escapeHtml(item.response)}</div>
                 </div>
             `;
         });
 
-        htmlContent += '</body></html>';
+        htmlContent += `
+            </body>
+            </html>
+        `;
 
         const blob = new Blob([htmlContent], { type: 'text/html' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'ai-education-notes.html';
+        a.download = `ai-education-notes-${timestamp}.html`;
+        document.body.appendChild(a);
         a.click();
+        document.body.removeChild(a);
         URL.revokeObjectURL(url);
         
         this.showNotification('Notes downloaded as HTML!', 'success');
+    }
+    
+    // Helper function to escape HTML characters
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     // PDF handling methods
@@ -751,15 +750,22 @@ class EducationAssistantUI {
                 }
 
                 this.uploadedFilesList.push(file);
+                this.persistentLog(`File added to uploadedFilesList: ${file.name}`);
+                
+                // Load PDF preview now that backend connectivity is fixed
                 await this.loadPdfPreview(file);
+                this.persistentLog('PDF preview loaded successfully');
+                
                 this.showNotification(`Successfully uploaded: ${file.name}`, 'success');
             } else {
                 this.showNotification('Only PDF files are supported', 'error');
             }
         }
         
+        // Update selector and show preview
         this.updatePdfSelector();
         this.showPdfPreview();
+        this.persistentLog('PDF selector and preview updated successfully');
     }
 
     async loadPdfPreview(file) {
@@ -944,22 +950,11 @@ class EducationAssistantUI {
                 }
             }
 
-            // Test basic connectivity first
-            this.persistentLog('Testing basic connectivity to backend...');
-            try {
-                const testResponse = await fetch('http://localhost:5000/', {
-                    method: 'GET'
-                });
-                this.persistentLog(`Basic connectivity test: ${testResponse.status} ${testResponse.statusText}`);
-            } catch (testError) {
-                this.persistentLog(`Basic connectivity failed: ${testError.message}`, 'error');
-                return { error: 'Cannot connect to backend server' };
-            }
-
             this.persistentLog('About to send fetch request...');
-            this.persistentLog(`Request URL: http://localhost:5000/api/chat`);
+            this.persistentLog(`Request URL: ${this.BACKEND_URL}/api/chat`);
             
-            const response = await fetch('http://localhost:5000/api/chat', {
+            // Simplify fetch to match working test files
+            const response = await fetch(`${this.BACKEND_URL}/api/chat`, {
                 method: 'POST',
                 body: formData
             });
@@ -974,7 +969,19 @@ class EducationAssistantUI {
                 throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
             }
 
-            const data = await response.json();
+            // CRITICAL: Parse response very carefully to prevent navigation
+            this.persistentLog('About to parse JSON response (critical moment)');
+            let data;
+            try {
+                const responseText = await response.text();
+                this.persistentLog('Response text received, parsing JSON...');
+                data = JSON.parse(responseText);
+                this.persistentLog('JSON parsed successfully');
+            } catch (parseError) {
+                this.persistentLog(`JSON parse error: ${parseError.message}`, 'error');
+                throw new Error('Invalid JSON response from server');
+            }
+            
             this.persistentLog('Backend response parsed successfully');
             this.persistentLog(`Response data: ${JSON.stringify(data)}`);
             this.persistentLog('=== BACKEND REQUEST END ===');
@@ -983,6 +990,12 @@ class EducationAssistantUI {
         } catch (error) {
             this.persistentLog('=== BACKEND REQUEST ERROR ===', 'error');
             this.persistentLog(`Backend API error: ${error.message}`, 'error');
+            
+            // Handle different types of errors
+            if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                return { error: 'Cannot connect to backend server. Please check if the server is running.' };
+            }
+            
             return { error: 'Failed to connect to backend: ' + error.message };
         }
     }
@@ -1099,9 +1112,9 @@ document.addEventListener('DOMContentLoaded', () => {
         return false;
     }, true);
     
-    // Prevent any clicks on buttons that might submit forms
+    // Only prevent actual form submissions, not button clicks
     document.addEventListener('click', (e) => {
-        // Exclude our debug buttons from prevention
+        // Exclude our debug buttons from any prevention
         if (e.target.id === 'debugToggleBtn' || 
             e.target.id === 'debugClearBtn' || 
             e.target.id === 'debugLogPanel' ||
@@ -1112,17 +1125,33 @@ document.addEventListener('DOMContentLoaded', () => {
             return; // Allow debug button clicks
         }
         
-        if (e.target.type === 'submit') {
-            educationAssistant.persistentLog('SUBMIT BUTTON CLICKED - PREVENTING', 'error');
-            e.preventDefault();
-            e.stopPropagation();
-            e.stopImmediatePropagation();
-            return false;
+        // Allow "Add to Notes" buttons to work
+        if (e.target.classList.contains('add-to-canvas-btn') || 
+            e.target.closest('.add-to-canvas-btn')) {
+            educationAssistant.persistentLog('Add to Notes button clicked - allowing');
+            return; // Allow add to canvas button clicks
         }
         
-        // Prevent any navigation on buttons
+        // Allow the download canvas button to work
+        if (e.target.id === 'downloadCanvasBtn' || 
+            e.target.closest('#downloadCanvasBtn') ||
+            e.target.classList.contains('download-btn') ||
+            e.target.closest('.download-btn')) {
+            educationAssistant.persistentLog('Download canvas button clicked - allowing');
+            return; // Allow download button clicks
+        }
+        
+        // Allow the send button to work normally
         if (e.target.tagName === 'BUTTON' && e.target.id === 'sendButton') {
-            educationAssistant.persistentLog('Send button click detected in document listener', 'error');
+            educationAssistant.persistentLog('Send button click allowed to proceed normally');
+            return; // Allow send button clicks
+        }
+        
+        // Only prevent actual submit type buttons, not our functional buttons
+        if (e.target.type === 'submit' && 
+            e.target.id !== 'sendButton' && 
+            e.target.id !== 'downloadCanvasBtn') {
+            educationAssistant.persistentLog('SUBMIT BUTTON CLICKED - PREVENTING', 'error');
             e.preventDefault();
             e.stopPropagation();
             e.stopImmediatePropagation();

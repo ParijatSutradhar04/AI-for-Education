@@ -11,16 +11,20 @@ import os
 import json
 import time
 import random
+import atexit
+import signal
+import sys
+import glob
 from datetime import datetime
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 # Enable CORS for all routes with specific configuration
 CORS(app, 
-     origins=['http://localhost:5598', 'http://127.0.0.1:5598', 'http://localhost:*', 'http://127.0.0.1:*'],
+     origins=['http://localhost:5598', 'http://127.0.0.1:5598', 'http://localhost:5599', 'http://127.0.0.1:5599', 'http://localhost:*', 'http://127.0.0.1:*'],
      methods=['GET', 'POST', 'OPTIONS'],
-     allow_headers=['Content-Type', 'Authorization'],
-     supports_credentials=True)
+     allow_headers=['Content-Type', 'Authorization', 'X-Requested-With'],
+     supports_credentials=False)
 
 # Configuration
 UPLOAD_FOLDER = 'uploads'
@@ -29,6 +33,51 @@ MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 
 # Create upload directory if it doesn't exist
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+def cleanup_uploads():
+    """Delete all PDF files from the uploads directory"""
+    try:
+        pdf_files = glob.glob(os.path.join(UPLOAD_FOLDER, "*.pdf"))
+        deleted_count = 0
+        
+        print(f"\n{'='*60}")
+        print("🧹 CLEANING UP UPLOADED FILES")
+        print(f"{'='*60}")
+        
+        if pdf_files:
+            print(f"📄 Found {len(pdf_files)} PDF file(s) to delete:")
+            for pdf_file in pdf_files:
+                try:
+                    os.remove(pdf_file)
+                    filename = os.path.basename(pdf_file)
+                    print(f"   ✅ Deleted: {filename}")
+                    deleted_count += 1
+                except Exception as e:
+                    filename = os.path.basename(pdf_file)
+                    print(f"   ❌ Failed to delete {filename}: {str(e)}")
+            
+            print(f"\n🗑️  Successfully deleted {deleted_count} PDF file(s)")
+        else:
+            print("📭 No PDF files found to delete")
+        
+        print(f"{'='*60}\n")
+        
+    except Exception as e:
+        print(f"❌ Error during cleanup: {str(e)}")
+
+def signal_handler(signum, frame):
+    """Handle shutdown signals gracefully"""
+    print(f"\n\n🛑 Received shutdown signal ({signum})")
+    cleanup_uploads()
+    print("👋 Backend server stopped gracefully")
+    sys.exit(0)
+
+# Register cleanup function to run when the program exits
+atexit.register(cleanup_uploads)
+
+# Register signal handlers for graceful shutdown
+signal.signal(signal.SIGINT, signal_handler)   # Ctrl+C
+signal.signal(signal.SIGTERM, signal_handler)  # Termination signal
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -329,7 +378,12 @@ if __name__ == '__main__':
     print(f"📁 Upload folder: {os.path.abspath(UPLOAD_FOLDER)}")
     print(f"📏 Max file size: {MAX_FILE_SIZE // (1024*1024)}MB")
     print(f"📋 Allowed extensions: {ALLOWED_EXTENSIONS}")
-    print("\n🌐 Server will be available at:")
+    
+    # Clean up any existing PDF files from previous sessions
+    print(f"\n🧹 Cleaning up previous session files...")
+    cleanup_uploads()
+    
+    print("🌐 Server will be available at:")
     print("   http://localhost:5000")
     print("   http://127.0.0.1:5000")
     print("\n📡 API Endpoints:")
@@ -341,6 +395,7 @@ if __name__ == '__main__':
     print("   ✅ Class level & strength tracking")
     print("   ✅ PDF page context awareness")
     print("   ✅ Educational content generation")
+    print("   ✅ Automatic file cleanup on server stop")
     print("\n🧪 Test Commands (type these in the frontend):")
     print("   'lesson' or 'teach' → Lesson planning help")
     print("   'language' → Multilingual support")
@@ -353,12 +408,22 @@ if __name__ == '__main__':
     print("   🌍 Teacher/Student languages")
     print("   🎯 Class level & strength")
     print("   📖 Current PDF page context")
+    print("\n💡 Note: Uploaded PDFs will be automatically deleted when server stops")
     print("\n" + "="*60)
     
-    # Run the Flask development server
-    app.run(
-        host='0.0.0.0',  # Allow external connections
-        port=5000,
-        debug=True,      # Enable debug mode
-        threaded=True    # Handle multiple requests
-    )
+    try:
+        # Run the Flask development server
+        app.run(
+            host='0.0.0.0',  # Allow external connections
+            port=5000,
+            debug=True,      # Enable debug mode
+            threaded=True    # Handle multiple requests
+        )
+    except KeyboardInterrupt:
+        print(f"\n\n🛑 Server interrupted by user")
+        cleanup_uploads()
+        print("👋 Backend server stopped gracefully")
+    except Exception as e:
+        print(f"\n\n💥 Server error: {str(e)}")
+        cleanup_uploads()
+        print("👋 Backend server stopped due to error")
