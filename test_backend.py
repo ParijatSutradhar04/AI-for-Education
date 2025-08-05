@@ -220,17 +220,10 @@ def status():
 @app.route('/api/test')
 def test():
     """Test endpoint to verify API is working"""
-    response_data = {
+    return jsonify({
         "message": "Test endpoint working!",
-        "timestamp": datetime.now().isoformat(),
-        "cors_test": "CORS headers should be present"
-    }
-    response = jsonify(response_data)
-    # Explicitly add CORS headers for testing
-    response.headers.add('Access-Control-Allow-Origin', '*')
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
-    return response
+        "timestamp": datetime.now().isoformat()
+    })
 
 @app.route('/api/chat', methods=['POST', 'OPTIONS'])
 def chat():
@@ -244,22 +237,11 @@ def chat():
         return response
         
     try:
-        print(f"\n{'='*60}")
-        print(f"🔔 NEW REQUEST RECEIVED AT {datetime.now().strftime('%H:%M:%S')}")
-        print(f"Request method: {request.method}")
-        print(f"Content type: {request.content_type}")
-        print(f"Content length: {request.content_length}")
-        print(f"Form keys: {list(request.form.keys())}")
-        print(f"Files keys: {list(request.files.keys())}")
-        
         # Get the message from form data
         message = request.form.get('message', '').strip()
         
         if not message:
-            print("❌ ERROR: No message provided")
             return jsonify({"error": "No message provided"}), 400
-        
-        print(f"✅ Message received: {message}")
         
         # Extract education context from form data
         education_context = {
@@ -272,8 +254,6 @@ def chat():
             'current_pdf_index': int(request.form.get('current_pdf_index', 0))
         }
         
-        print(f"✅ Education context: {education_context}")
-        
         # Process uploaded files
         uploaded_files = []
         files_info = []
@@ -282,7 +262,6 @@ def chat():
             if key.startswith('file_'):
                 file = request.files[key]
                 if file and file.filename:
-                    print(f"📄 Processing file: {file.filename} ({file.content_length} bytes)")
                     if allowed_file(file.filename):
                         # Secure the filename
                         filename = secure_filename(file.filename)
@@ -296,7 +275,6 @@ def chat():
                         file.seek(0)
                         
                         if file_size > MAX_FILE_SIZE:
-                            print(f"❌ ERROR: File {filename} too large: {file_size} bytes")
                             return jsonify({"error": f"File {filename} is too large. Maximum size is 10MB."}), 400
                         
                         # Save the file
@@ -308,26 +286,19 @@ def chat():
                             "size": file_size,
                             "path": filepath
                         })
-                        print(f"✅ File saved: {unique_filename}")
                     else:
-                        print(f"❌ ERROR: File type not allowed: {file.filename}")
                         return jsonify({"error": f"File type not allowed. Only PDF files are supported."}), 400
-        
-        print(f"✅ Total files processed: {len(files_info)}")
         
         # Log the request for debugging
         log_request(message, files_info, education_context)
         
         # Simulate processing delay
-        processing_delay = random.uniform(0.5, 1.5)  # Reduced delay for testing
-        print(f"⏳ Simulating processing... ({processing_delay:.1f}s)")
+        processing_delay = random.uniform(0.5, 1.5)
+        print(f"Processing request... ({processing_delay:.1f}s)")
         time.sleep(processing_delay)
         
         # Generate response based on message content and education context
         response = generate_sample_responses(message, len(uploaded_files), education_context)
-        
-        # Log the response
-        print(f"✅ Generated response: {json.dumps(response, indent=2)}")
         
         # Ensure proper JSON response with correct headers
         json_response = jsonify(response)
@@ -336,19 +307,11 @@ def chat():
         json_response.headers['Pragma'] = 'no-cache'
         json_response.headers['Expires'] = '0'
         
-        print(f"🚀 Sending response back to frontend")
-        print(f"{'='*60}\n")
-        
         return json_response
         
     except Exception as e:
         error_msg = f"Server error: {str(e)}"
-        print(f"💥 CRITICAL ERROR: {error_msg}")
-        print(f"Error type: {type(e).__name__}")
-        print(f"Error traceback:")
-        import traceback
-        traceback.print_exc()
-        print(f"{'='*60}\n")
+        print(f"ERROR: {error_msg}")
         return jsonify({"error": error_msg}), 500
 
 @app.route('/uploads/<filename>')
