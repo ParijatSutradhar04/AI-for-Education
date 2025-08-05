@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Test</title>
+</head>
+<body>
+    <h1>Simple Backend Test</h1>
+    
+    <div>
+        <label for="message">Message:</label>
+        <input type="text" id="message" value="Hello, this is a test message">
+    </div>
+    
+    <div style="border: 1px solid #ccc; padding: 10px; margin: 10px 0;">
+        <label for="file">PDF File:</label>
+        <input type="file" id="file" accept=".pdf" style="margin-left: 10px;">
+        <small style="display: block; margin-top: 5px; color: #666;">
+            Select a PDF file (max 10MB). File selection should not refresh the page.
+        </small>
+    </div>
+    
+    <div style="margin: 10px 0;">
+        <button type="button" id="sendBtn" style="padding: 10px 20px; background: #007cba; color: white; border: none; cursor: pointer;">
+            Send to Backend
+        </button>
+    </div>
+    
+    <div id="result" style="margin-top: 20px; padding: 10px; border: 1px solid #ccc;"></div>
+
+    <script>
+        // Prevent any form-like behavior
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM Content Loaded - Setting up event handlers');
+            
+            // Prevent file input from causing page refresh
+            const fileInput = document.getElementById('file');
+            
+            fileInput.addEventListener('change', function(e) {
+                console.log('File input change event:', e.target.files.length, 'files selected');
+                e.preventDefault();
+                e.stopPropagation();
+                
+                if (e.target.files.length > 0) {
+                    console.log('File selected:', e.target.files[0].name, e.target.files[0].size, 'bytes');
+                    document.getElementById('result').innerHTML = 
+                        '<span style="color: blue;">File selected: ' + e.target.files[0].name + ' (' + 
+                        Math.round(e.target.files[0].size / 1024) + ' KB)</span>';
+                }
+                
+                return false;
+            });
+            
+            // Prevent any form submission
+            fileInput.addEventListener('submit', function(e) {
+                console.log('PREVENTING SUBMIT on file input');
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            });
+            
+            // Prevent drag and drop from causing navigation
+            document.addEventListener('dragover', function(e) {
+                e.preventDefault();
+            });
+            
+            document.addEventListener('drop', function(e) {
+                e.preventDefault();
+            });
+        });
+        
+        // Prevent any navigation during page lifecycle
+        window.addEventListener('beforeunload', function(e) {
+            console.log('Page about to unload - this should not happen during file operations');
+        });
+        
+        // Monitor page visibility
+        document.addEventListener('visibilitychange', function() {
+            console.log('Page visibility changed:', document.hidden ? 'hidden' : 'visible');
+        });
+        
+        // Test backend connectivity first
+        async function testConnectivity() {
+            console.log('Testing backend connectivity...');
+            
+            try {
+                // Test 1: Basic connectivity
+                const basicTest = await fetch('http://localhost:5000/', {
+                    method: 'GET'
+                });
+                console.log('✅ Basic connectivity test:', basicTest.status, basicTest.statusText);
+                
+                // Test 2: API status
+                const statusTest = await fetch('http://localhost:5000/api/status', {
+                    method: 'GET'
+                });
+                console.log('✅ API status test:', statusTest.status, statusTest.statusText);
+                const statusData = await statusTest.json();
+                console.log('Status data:', statusData);
+                
+                return true;
+            } catch (error) {
+                console.error('❌ Connectivity test failed:', error);
+                return false;
+            }
+        }
+        
+        document.getElementById('sendBtn').addEventListener('click', async function(e) {
+            console.log('=== SEND BUTTON CLICKED ===');
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const messageValue = document.getElementById('message').value;
+            const fileInput = document.getElementById('file');
+            const resultDiv = document.getElementById('result');
+            
+            if (!messageValue.trim()) {
+                resultDiv.innerHTML = '<span style="color: red;">Please enter a message</span>';
+                return;
+            }
+            
+            try {
+                resultDiv.innerHTML = '<span style="color: blue;">Testing connectivity...</span>';
+                
+                // Test connectivity first
+                const isConnected = await testConnectivity();
+                if (!isConnected) {
+                    resultDiv.innerHTML = '<span style="color: red;">Cannot connect to backend server on localhost:5000</span>';
+                    return;
+                }
+                
+                resultDiv.innerHTML = '<span style="color: blue;">Sending request...</span>';
+                
+                const formData = new FormData();
+                formData.append('message', messageValue);
+                
+                // Add file if selected
+                if (fileInput.files.length > 0) {
+                    console.log('Adding file to FormData:', fileInput.files[0].name, fileInput.files[0].size, 'bytes');
+                    formData.append('file_0', fileInput.files[0]);
+                } else {
+                    console.log('No file selected for upload');
+                }
+                
+                // Add required fields
+                formData.append('teacher_language', 'english');
+                formData.append('student_language', 'english');
+                formData.append('class_level', '6');
+                formData.append('class_strength', '30');
+                formData.append('current_page', '1');
+                formData.append('total_pages', '1');
+                formData.append('current_pdf_index', '0');
+                
+                console.log('About to send fetch request...');
+                console.log('URL:', 'http://localhost:5000/api/chat');
+                console.log('Method:', 'POST');
+                console.log('FormData entries:');
+                for (let [key, value] of formData.entries()) {
+                    if (value instanceof File) {
+                        console.log(`  ${key}: File - ${value.name} (${value.size} bytes)`);
+                    } else {
+                        console.log(`  ${key}: ${value}`);
+                    }
+                }
+                
+                const response = await fetch('http://localhost:5000/api/chat', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                console.log('Response received:', response.status, response.statusText);
+                console.log('Response headers:');
+                for (let [key, value] of response.headers.entries()) {
+                    console.log(`  ${key}: ${value}`);
+                }
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Response error text:', errorText);
+                    throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+                }
+                
+                const data = await response.json();
+                console.log('Response data:', data);
+                
+                if (data.error) {
+                    resultDiv.innerHTML = '<span style="color: red;">Error: ' + data.error + '</span>';
+                } else {
+                    resultDiv.innerHTML = '<span style="color: green;">Success: ' + (data.text || 'Response received') + '</span>';
+                    if (data.image_url) {
+                        resultDiv.innerHTML += '<br><img src="' + data.image_url + '" alt="Generated image" style="max-width: 200px;">';
+                    }
+                }
+                
+            } catch (error) {
+                console.error('❌ Error details:', error);
+                console.error('Error name:', error.name);
+                console.error('Error message:', error.message);
+                console.error('Error stack:', error.stack);
+                resultDiv.innerHTML = '<span style="color: red;">Error: ' + error.message + '</span>';
+            }
+            
+            console.log('=== SEND BUTTON CLICK COMPLETED ===');
+        });
+        
+        // Test connectivity on page load
+        window.addEventListener('load', testConnectivity);
+        
+        // Global error handler to catch any uncaught errors
+        window.addEventListener('error', function(e) {
+            console.error('❌ GLOBAL ERROR:', e.error);
+            console.error('Error file:', e.filename);
+            console.error('Error line:', e.lineno);
+            console.error('Error column:', e.colno);
+        });
+        
+        // Catch unhandled promise rejections
+        window.addEventListener('unhandledrejection', function(e) {
+            console.error('❌ UNHANDLED PROMISE REJECTION:', e.reason);
+        });
+        
+        // Override window.location methods to catch unexpected navigation
+        const originalReload = window.location.reload;
+        window.location.reload = function() {
+            console.error('🚨 PAGE RELOAD ATTEMPTED - This should not happen!');
+            console.trace('Reload stack trace:');
+            return originalReload.call(this);
+        };
+        
+        console.log('✅ Test page setup complete - all event handlers installed');
+    </script>
+</body>
+</html>

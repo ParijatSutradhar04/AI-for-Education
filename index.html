@@ -3,45 +3,150 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Chatbot with RAG Pipeline</title>
+    <title>AI Education Assistant</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
 <body>
-    <div class="container">
-        <!-- Left Panel -->
+    <!-- Header Section -->
+    <div class="header">
+        <div class="header-content">
+            <div class="header-title">
+                <h1><i class="fas fa-graduation-cap"></i> AI Education Assistant</h1>
+            </div>
+            <div class="header-controls">
+                <div class="upload-controls">
+                    <div class="upload-area-header" id="uploadArea">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <span>Drop PDFs or click to upload</span>
+                        <input type="file" id="pdfInput" accept=".pdf" multiple hidden>
+                    </div>
+                </div>
+                <div class="dropdown-group">
+                    <label for="teacherLanguage">Teacher's Language</label>
+                    <select id="teacherLanguage" class="dropdown">
+                        <option value="english">English</option>
+                        <option value="hindi">Hindi</option>
+                        <option value="bengali">Bengali</option>
+                        <option value="tamil">Tamil</option>
+                        <option value="telugu">Telugu</option>
+                        <option value="marathi">Marathi</option>
+                        <option value="gujarati">Gujarati</option>
+                        <option value="kannada">Kannada</option>
+                        <option value="malayalam">Malayalam</option>
+                        <option value="punjabi">Punjabi</option>
+                    </select>
+                </div>
+                <div class="dropdown-group">
+                    <label for="studentLanguage">Student's Language</label>
+                    <select id="studentLanguage" class="dropdown">
+                        <option value="english">English</option>
+                        <option value="hindi">Hindi</option>
+                        <option value="bengali">Bengali</option>
+                        <option value="tamil">Tamil</option>
+                        <option value="telugu">Telugu</option>
+                        <option value="marathi">Marathi</option>
+                        <option value="gujarati">Gujarati</option>
+                        <option value="kannada">Kannada</option>
+                        <option value="malayalam">Malayalam</option>
+                        <option value="punjabi">Punjabi</option>
+                    </select>
+                </div>
+                <div class="dropdown-group">
+                    <label for="classLevel">Class</label>
+                    <select id="classLevel" class="dropdown">
+                        <option value="1">Class 1</option>
+                        <option value="2">Class 2</option>
+                        <option value="3">Class 3</option>
+                        <option value="4">Class 4</option>
+                        <option value="5">Class 5</option>
+                        <option value="6" selected>Class 6</option>
+                        <option value="7">Class 7</option>
+                        <option value="8">Class 8</option>
+                        <option value="9">Class 9</option>
+                        <option value="10">Class 10</option>
+                    </select>
+                </div>
+                <div class="dropdown-group">
+                    <label for="classStrength">Class Strength</label>
+                    <select id="classStrength" class="dropdown">
+                        <option value="10">10 students</option>
+                        <option value="15">15 students</option>
+                        <option value="20">20 students</option>
+                        <option value="25">25 students</option>
+                        <option value="30" selected>30 students</option>
+                        <option value="35">35 students</option>
+                        <option value="40">40 students</option>
+                        <option value="45">45 students</option>
+                        <option value="50">50 students</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <!-- Left Panel - PDF Preview -->
         <div class="left-panel">
             <div class="panel-header">
-                <h2><i class="fas fa-upload"></i> Document & Results</h2>
+                <h3><i class="fas fa-file-pdf"></i> PDF Viewer</h3>
             </div>
             
-            <!-- PDF Upload Section -->
-            <div class="upload-section">
-                <h3>Upload PDF Documents</h3>
-                <div class="upload-area" id="uploadArea">
-                    <i class="fas fa-cloud-upload-alt"></i>
-                    <p>Drag and drop PDF files here or click to select</p>
-                    <input type="file" id="pdfInput" accept=".pdf" multiple hidden>
-                    <button class="upload-btn" onclick="document.getElementById('pdfInput').click()">
-                        Choose Files
-                    </button>
+            <!-- PDF Preview and Navigation -->
+            <div class="pdf-preview-section" id="pdfPreviewSection" style="display: none;">
+                <div class="pdf-controls">
+                    <select id="pdfSelector" class="pdf-selector">
+                        <!-- PDF options will be populated here -->
+                    </select>
+                    <div class="controls-row">
+                        <div class="page-controls">
+                            <button id="prevPage" class="page-btn"><i class="fas fa-chevron-left"></i></button>
+                            <span class="page-info">
+                                Page <span id="currentPage">1</span> of <span id="totalPages">1</span>
+                            </span>
+                            <button id="nextPage" class="page-btn"><i class="fas fa-chevron-right"></i></button>
+                        </div>
+                        <div class="zoom-controls">
+                            <button id="zoomOut" class="zoom-btn"><i class="fas fa-search-minus"></i></button>
+                            <span class="zoom-info" id="zoomInfo">100%</span>
+                            <button id="zoomIn" class="zoom-btn"><i class="fas fa-search-plus"></i></button>
+                            <button id="fitToWidth" class="fit-btn">Fit Width</button>
+                        </div>
+                    </div>
                 </div>
-                <div class="uploaded-files" id="uploadedFiles"></div>
-            </div>
-
-            <!-- Image Display Section -->
-            <div class="image-section" id="imageSection" style="display: none;">
-                <h3>Generated Image</h3>
-                <div class="image-container">
-                    <img id="generatedImage" src="" alt="Generated Image">
+                <div class="pdf-viewer">
+                    <div class="pdf-canvas-container">
+                        <canvas id="pdfCanvas"></canvas>
+                    </div>
                 </div>
             </div>
+            
+            <!-- No PDF Uploaded Message -->
+            <div class="no-pdf-message" id="noPdfMessage">
+                <i class="fas fa-file-pdf"></i>
+                <p>No PDF uploaded</p>
+                <small>Use the upload area in the header to add PDF files</small>
+            </div>
+        </div>
 
-            <!-- Checklist Section -->
-            <div class="checklist-section" id="checklistSection" style="display: none;">
-                <h3>Analysis Results</h3>
-                <div class="checklist-container" id="checklistContainer">
-                    <!-- Checklist items will be populated here -->
+        <!-- Middle Panel - Canvas -->
+        <div class="middle-panel">
+            <div class="panel-header">
+                <h3><i class="fas fa-edit"></i> Notes & Responses</h3>
+                <button id="downloadCanvasBtn" class="download-btn">
+                    <i class="fas fa-download"></i> Download PDF
+                </button>
+            </div>
+            
+            <div class="canvas-container">
+                <div class="canvas-content" id="canvasContent">
+                    <div class="canvas-placeholder">
+                        <i class="fas fa-sticky-note"></i>
+                        <p>AI responses will appear here when you add them</p>
+                        <small>Click "Add to Notes" button next to AI responses in the chat</small>
+                    </div>
                 </div>
             </div>
         </div>
@@ -49,7 +154,7 @@
         <!-- Right Panel - Chat Interface -->
         <div class="right-panel">
             <div class="panel-header">
-                <h2><i class="fas fa-comments"></i> Chat Interface</h2>
+                <h3><i class="fas fa-comments"></i> AI Assistant</h3>
             </div>
             
             <!-- Chat Messages Area -->
@@ -59,7 +164,7 @@
                         <i class="fas fa-robot"></i>
                     </div>
                     <div class="message-content">
-                        <p>Hello! I'm your AI assistant. Upload a PDF document and ask me questions about it, or request image generation.</p>
+                        <p>Hello! I'm your AI Education Assistant. Upload PDF documents and ask me questions to help with lesson planning and teaching materials.</p>
                     </div>
                     <div class="message-time">Just now</div>
                 </div>
@@ -70,10 +175,10 @@
                 <div class="input-container">
                     <textarea 
                         id="messageInput" 
-                        placeholder="Type your message here..."
+                        placeholder="Ask me about the uploaded documents..."
                         rows="1"
                     ></textarea>
-                    <button id="sendButton" class="send-btn">
+                    <button id="sendButton" type="button" class="send-btn">
                         <i class="fas fa-paper-plane"></i>
                     </button>
                 </div>
