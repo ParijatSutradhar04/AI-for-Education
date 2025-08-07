@@ -128,11 +128,11 @@ def generate_sample_responses(message, file_count=0, education_context=None):
     
     # Sample educational images
     sample_images = [
-        "https://via.placeholder.com/400x300/667eea/ffffff?text=Class+Diagram",
-        "https://via.placeholder.com/400x300/28a745/ffffff?text=Educational+Chart",
-        "https://via.placeholder.com/400x300/dc3545/ffffff?text=Learning+Material",
-        "https://via.placeholder.com/400x300/ffc107/000000?text=Teaching+Aid",
-        "https://via.placeholder.com/400x300/17a2b8/ffffff?text=Classroom+Visual"
+        "https://picsum.photos/id/1/200/300",
+        "https://picsum.photos/id/2/200/300",
+        "https://picsum.photos/id/3/200/300",
+        "https://picsum.photos/id/4/200/300",
+        "https://picsum.photos/id/5/200/300"
     ]
     
     # Determine response type based on message content

@@ -88,9 +88,94 @@
         </div>
     </div>
 
+    <!-- Mobile Settings Toggle Button -->
+    <button class="mobile-settings-toggle" id="mobileSettingsToggle">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <!-- Settings Overlay for Mobile -->
+    <div class="settings-overlay" id="settingsOverlay">
+        <div class="settings-panel">
+            <div class="settings-header">
+                <h3><i class="fas fa-cog"></i> Settings</h3>
+                <button class="settings-close" id="settingsClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="mobile-upload-section" id="mobileUploadArea">
+                <i class="fas fa-cloud-upload-alt"></i>
+                <span>Tap to upload PDF files</span>
+            </div>
+            
+            <div class="mobile-dropdown-section">
+                <label for="mobileTeacherLanguage">Teacher's Language</label>
+                <select id="mobileTeacherLanguage" class="mobile-dropdown">
+                    <option value="english">English</option>
+                    <option value="hindi">Hindi</option>
+                    <option value="bengali">Bengali</option>
+                    <option value="tamil">Tamil</option>
+                    <option value="telugu">Telugu</option>
+                    <option value="marathi">Marathi</option>
+                    <option value="gujarati">Gujarati</option>
+                    <option value="kannada">Kannada</option>
+                    <option value="malayalam">Malayalam</option>
+                    <option value="punjabi">Punjabi</option>
+                </select>
+            </div>
+            
+            <div class="mobile-dropdown-section">
+                <label for="mobileStudentLanguage">Student's Language</label>
+                <select id="mobileStudentLanguage" class="mobile-dropdown">
+                    <option value="english">English</option>
+                    <option value="hindi">Hindi</option>
+                    <option value="bengali">Bengali</option>
+                    <option value="tamil">Tamil</option>
+                    <option value="telugu">Telugu</option>
+                    <option value="marathi">Marathi</option>
+                    <option value="gujarati">Gujarati</option>
+                    <option value="kannada">Kannada</option>
+                    <option value="malayalam">Malayalam</option>
+                    <option value="punjabi">Punjabi</option>
+                </select>
+            </div>
+            
+            <div class="mobile-dropdown-section">
+                <label for="mobileClassLevel">Class</label>
+                <select id="mobileClassLevel" class="mobile-dropdown">
+                    <option value="1">Class 1</option>
+                    <option value="2">Class 2</option>
+                    <option value="3">Class 3</option>
+                    <option value="4">Class 4</option>
+                    <option value="5">Class 5</option>
+                    <option value="6" selected>Class 6</option>
+                    <option value="7">Class 7</option>
+                    <option value="8">Class 8</option>
+                    <option value="9">Class 9</option>
+                    <option value="10">Class 10</option>
+                </select>
+            </div>
+            
+            <div class="mobile-dropdown-section">
+                <label for="mobileClassStrength">Class Strength</label>
+                <select id="mobileClassStrength" class="mobile-dropdown">
+                    <option value="10">10 students</option>
+                    <option value="15">15 students</option>
+                    <option value="20">20 students</option>
+                    <option value="25">25 students</option>
+                    <option value="30" selected>30 students</option>
+                    <option value="35">35 students</option>
+                    <option value="40">40 students</option>
+                    <option value="45">45 students</option>
+                    <option value="50">50 students</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
     <div class="main-container">
         <!-- Left Panel - PDF Preview -->
-        <div class="left-panel">
+        <div class="left-panel active" id="pdfPanel">
             <div class="panel-header">
                 <h3><i class="fas fa-file-pdf"></i> PDF Viewer</h3>
             </div>
@@ -128,12 +213,12 @@
             <div class="no-pdf-message" id="noPdfMessage">
                 <i class="fas fa-file-pdf"></i>
                 <p>No PDF uploaded</p>
-                <small>Use the upload area in the header to add PDF files</small>
+                <small>Use the settings menu to upload PDF files</small>
             </div>
         </div>
 
         <!-- Middle Panel - Canvas -->
-        <div class="middle-panel">
+        <div class="middle-panel" id="notesPanel">
             <div class="panel-header">
                 <h3><i class="fas fa-edit"></i> Notes & Responses</h3>
                 <button id="downloadCanvasBtn" class="download-btn">
@@ -157,7 +242,7 @@
         </div>
 
         <!-- Right Panel - Chat Interface -->
-        <div class="right-panel">
+        <div class="right-panel" id="chatPanel">
             <div class="panel-header">
                 <h3><i class="fas fa-comments"></i> AI Assistant</h3>
             </div>
@@ -191,6 +276,24 @@
                     <small>Press Enter to send, Shift+Enter for new line</small>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Mobile Navigation -->
+    <div class="mobile-nav" id="mobileNav">
+        <div class="mobile-nav-buttons">
+            <button class="mobile-nav-btn active" data-panel="pdfPanel">
+                <i class="fas fa-file-pdf"></i>
+                <span>PDF</span>
+            </button>
+            <button class="mobile-nav-btn" data-panel="notesPanel">
+                <i class="fas fa-edit"></i>
+                <span>Notes</span>
+            </button>
+            <button class="mobile-nav-btn" data-panel="chatPanel">
+                <i class="fas fa-comments"></i>
+                <span>Chat</span>
+            </button>
         </div>
     </div>
 

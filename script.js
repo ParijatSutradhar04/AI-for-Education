@@ -118,8 +118,33 @@ class EducationAssistantUI {
         this.classLevel = document.getElementById('classLevel');
         this.classStrength = document.getElementById('classStrength');
         
+        // Mobile form elements
+        this.mobileTeacherLanguage = document.getElementById('mobileTeacherLanguage');
+        this.mobileStudentLanguage = document.getElementById('mobileStudentLanguage');
+        this.mobileClassLevel = document.getElementById('mobileClassLevel');
+        this.mobileClassStrength = document.getElementById('mobileClassStrength');
+        
+        // Mobile navigation elements
+        this.mobileNav = document.getElementById('mobileNav');
+        this.mobileNavBtns = document.querySelectorAll('.mobile-nav-btn');
+        this.panels = {
+            pdfPanel: document.getElementById('pdfPanel'),
+            notesPanel: document.getElementById('notesPanel'),
+            chatPanel: document.getElementById('chatPanel')
+        };
+        
+        // Mobile settings elements
+        this.mobileSettingsToggle = document.getElementById('mobileSettingsToggle');
+        this.settingsOverlay = document.getElementById('settingsOverlay');
+        this.settingsClose = document.getElementById('settingsClose');
+        this.mobileUploadArea = document.getElementById('mobileUploadArea');
+        
         // Other elements
         this.loadingOverlay = document.getElementById('loadingOverlay');
+        
+        // Initialize mobile navigation
+        this.initializeMobileNavigation();
+        this.initializeMobileSettings();
     }
 
     setupEventListeners() {
@@ -223,6 +248,161 @@ class EducationAssistantUI {
         });
     }
 
+    // Mobile Navigation Methods
+    initializeMobileNavigation() {
+        if (!this.mobileNavBtns || this.mobileNavBtns.length === 0) return;
+        
+        this.mobileNavBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const panelId = btn.getAttribute('data-panel');
+                this.switchToPanel(panelId);
+                
+                // Update active button
+                this.mobileNavBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            });
+        });
+    }
+    
+    switchToPanel(panelId) {
+        // Hide all panels
+        Object.values(this.panels).forEach(panel => {
+            if (panel) panel.classList.remove('active');
+        });
+        
+        // Show selected panel
+        if (this.panels[panelId]) {
+            this.panels[panelId].classList.add('active');
+        }
+        
+        this.persistentLog(`Switched to panel: ${panelId}`);
+    }
+    
+    // Mobile Settings Methods
+    initializeMobileSettings() {
+        if (!this.mobileSettingsToggle || !this.settingsOverlay) return;
+        
+        // Settings toggle button
+        this.mobileSettingsToggle.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.openMobileSettings();
+        });
+        
+        // Settings close button
+        this.settingsClose.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.closeMobileSettings();
+        });
+        
+        // Close on overlay click
+        this.settingsOverlay.addEventListener('click', (e) => {
+            if (e.target === this.settingsOverlay) {
+                this.closeMobileSettings();
+            }
+        });
+        
+        // Handle escape key to close settings
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && this.settingsOverlay.classList.contains('active')) {
+                this.closeMobileSettings();
+            }
+        });
+        
+        // Mobile upload area
+        this.mobileUploadArea.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.triggerFileUpload();
+        });
+        
+        // Sync mobile and desktop form values
+        this.syncFormValues();
+        this.setupFormSync();
+    }
+    
+    openMobileSettings() {
+        this.settingsOverlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+        this.persistentLog('Mobile settings opened');
+    }
+    
+    closeMobileSettings() {
+        this.settingsOverlay.classList.remove('active');
+        document.body.style.overflow = '';
+        this.persistentLog('Mobile settings closed');
+    }
+    
+    triggerFileUpload() {
+        this.persistentLog('Triggering file upload from mobile');
+        try {
+            this.pdfInput.click();
+        } catch (error) {
+            this.persistentLog(`Error triggering file upload: ${error.message}`, 'error');
+        }
+    }
+    
+    syncFormValues() {
+        // Sync from desktop to mobile on load
+        if (this.teacherLanguage && this.mobileTeacherLanguage) {
+            this.mobileTeacherLanguage.value = this.teacherLanguage.value;
+        }
+        if (this.studentLanguage && this.mobileStudentLanguage) {
+            this.mobileStudentLanguage.value = this.studentLanguage.value;
+        }
+        if (this.classLevel && this.mobileClassLevel) {
+            this.mobileClassLevel.value = this.classLevel.value;
+        }
+        if (this.classStrength && this.mobileClassStrength) {
+            this.mobileClassStrength.value = this.classStrength.value;
+        }
+    }
+    
+    setupFormSync() {
+        // Sync desktop to mobile
+        if (this.teacherLanguage && this.mobileTeacherLanguage) {
+            this.teacherLanguage.addEventListener('change', () => {
+                this.mobileTeacherLanguage.value = this.teacherLanguage.value;
+            });
+        }
+        if (this.studentLanguage && this.mobileStudentLanguage) {
+            this.studentLanguage.addEventListener('change', () => {
+                this.mobileStudentLanguage.value = this.studentLanguage.value;
+            });
+        }
+        if (this.classLevel && this.mobileClassLevel) {
+            this.classLevel.addEventListener('change', () => {
+                this.mobileClassLevel.value = this.classLevel.value;
+            });
+        }
+        if (this.classStrength && this.mobileClassStrength) {
+            this.classStrength.addEventListener('change', () => {
+                this.mobileClassStrength.value = this.classStrength.value;
+            });
+        }
+        
+        // Sync mobile to desktop
+        if (this.mobileTeacherLanguage && this.teacherLanguage) {
+            this.mobileTeacherLanguage.addEventListener('change', () => {
+                this.teacherLanguage.value = this.mobileTeacherLanguage.value;
+            });
+        }
+        if (this.mobileStudentLanguage && this.studentLanguage) {
+            this.mobileStudentLanguage.addEventListener('change', () => {
+                this.studentLanguage.value = this.mobileStudentLanguage.value;
+            });
+        }
+        if (this.mobileClassLevel && this.classLevel) {
+            this.mobileClassLevel.addEventListener('change', () => {
+                this.classLevel.value = this.mobileClassLevel.value;
+            });
+        }
+        if (this.mobileClassStrength && this.classStrength) {
+            this.mobileClassStrength.addEventListener('change', () => {
+                this.classStrength.value = this.mobileClassStrength.value;
+            });
+        }
+    }
+
     // Add a test method to create sample canvas items for testing
     addTestCanvasItem() {
         const testItem = {
@@ -321,21 +501,26 @@ class EducationAssistantUI {
         formData.append('total_pages', this.totalPages.toString());
         formData.append('current_pdf_index', this.currentPdfIndex.toString());
         
-        // Add dropdown values
-        formData.append('teacher_language', this.teacherLanguage.value);
-        formData.append('student_language', this.studentLanguage.value);
-        formData.append('class_level', this.classLevel.value);
-        formData.append('class_strength', this.classStrength.value);
+        // Add dropdown values - use mobile values if available, desktop otherwise
+        const teacherLang = (this.mobileTeacherLanguage?.value) || this.teacherLanguage.value;
+        const studentLang = (this.mobileStudentLanguage?.value) || this.studentLanguage.value;
+        const classLvl = (this.mobileClassLevel?.value) || this.classLevel.value;
+        const classStr = (this.mobileClassStrength?.value) || this.classStrength.value;
+        
+        formData.append('teacher_language', teacherLang);
+        formData.append('student_language', studentLang);
+        formData.append('class_level', classLvl);
+        formData.append('class_strength', classStr);
 
         console.log('Payload being sent:', {
             message: message,
             fileCount: this.uploadedFilesList.length,
             currentPage: this.currentPage,
             totalPages: this.totalPages,
-            teacherLanguage: this.teacherLanguage.value,
-            studentLanguage: this.studentLanguage.value,
-            classLevel: this.classLevel.value,
-            classStrength: this.classStrength.value
+            teacherLanguage: teacherLang,
+            studentLanguage: studentLang,
+            classLevel: classLvl,
+            classStrength: classStr
         });
 
         return formData;
