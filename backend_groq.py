@@ -50,14 +50,17 @@ for folder in [UPLOAD_FOLDER, TEMP_FOLDER]:
     os.makedirs(folder, exist_ok=True)
 
 # Groq Configuration
-# Using the same API key from the provided groq_api.py file
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 # Initialize Groq client
 client = None
 try:
-    client = Groq(api_key=GROQ_API_KEY)
-    logger.info("✅ Groq client initialized successfully")
+    if GROQ_API_KEY:
+        client = Groq(api_key=GROQ_API_KEY)
+        logger.info("✅ Groq client initialized successfully")
+    else:
+        logger.error("❌ GROQ_API_KEY not found in environment variables")
+        client = None
 except Exception as e:
     logger.error(f"❌ Error initializing Groq client: {str(e)}")
     client = None

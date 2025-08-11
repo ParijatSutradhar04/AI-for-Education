@@ -1,10 +1,11 @@
-from groq import Groq
 import os
+from groq import Groq
 import dotenv
 
 dotenv.load_dotenv()
 
-client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+api_key = os.getenv("GROQ_API_KEY")
+client = Groq(api_key=api_key)
 completion = client.chat.completions.create(
     model="meta-llama/llama-4-scout-17b-16e-instruct",
     messages=[

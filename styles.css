@@ -1119,3 +1119,93 @@ body {
 ::-webkit-scrollbar-thumb:hover {
     background: #a8a8a8;
 }
+
+/* Markdown Styling for AI Responses */
+.message-content h1,
+.message-content h2,
+.message-content h3,
+.message-content h4,
+.message-content h5,
+.message-content h6 {
+    color: #2c3e50;
+    margin: 15px 0 10px 0;
+    font-weight: 600;
+}
+
+.message-content h1 { font-size: 1.5em; }
+.message-content h2 { font-size: 1.3em; }
+.message-content h3 { font-size: 1.2em; }
+.message-content h4 { font-size: 1.1em; }
+
+.message-content ul,
+.message-content ol {
+    margin: 10px 0;
+    padding-left: 25px;
+}
+
+.message-content li {
+    margin: 5px 0;
+    line-height: 1.5;
+}
+
+.message-content strong {
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.message-content em {
+    font-style: italic;
+    color: #555;
+}
+
+.message-content code {
+    background: #f4f4f4;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+    color: #d63384;
+}
+
+.message-content pre {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 5px;
+    padding: 15px;
+    margin: 10px 0;
+    overflow-x: auto;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+}
+
+.message-content pre code {
+    background: none;
+    padding: 0;
+    color: #212529;
+}
+
+.message-content blockquote {
+    border-left: 4px solid #007bff;
+    margin: 15px 0;
+    padding: 10px 20px;
+    background: #f8f9fa;
+    border-radius: 0 5px 5px 0;
+    font-style: italic;
+    color: #555;
+}
+
+.message-content hr {
+    border: none;
+    border-top: 2px solid #e9ecef;
+    margin: 20px 0;
+}
+
+/* Ensure links in markdown are styled */
+.message-content a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.message-content a:hover {
+    text-decoration: underline;
+}

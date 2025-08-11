@@ -526,7 +526,7 @@ class EducationAssistantUI {
         return formData;
     }
 
-    addMessage(content, sender, timestamp = null, imageUrl = null, originalQuestion = null) {
+    addMessage(content, sender, timestamp = null, imageUrl = null, originalQuestion = null, isHtml = false, plainText = null) {
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${sender}-message`;
 
@@ -537,9 +537,13 @@ class EducationAssistantUI {
         const contentDiv = document.createElement('div');
         contentDiv.className = 'message-content';
         
-        // Add text content
+        // Add text content - use innerHTML for HTML content, textContent for plain text
         const textDiv = document.createElement('p');
-        textDiv.textContent = content;
+        if (isHtml) {
+            textDiv.innerHTML = content;
+        } else {
+            textDiv.textContent = content;
+        }
         contentDiv.appendChild(textDiv);
         
         // Add image if provided
@@ -561,7 +565,9 @@ class EducationAssistantUI {
             const addToCanvasBtn = document.createElement('button');
             addToCanvasBtn.className = 'add-to-canvas-btn';
             addToCanvasBtn.innerHTML = '<i class="fas fa-plus"></i> Add to Notes';
-            addToCanvasBtn.onclick = () => this.addToCanvas(content, imageUrl, originalQuestion);
+            // Use plain text for PDF, but content for display
+            const textForPdf = plainText || content;
+            addToCanvasBtn.onclick = () => this.addToCanvas(content, imageUrl, originalQuestion, textForPdf);
             
             actionsDiv.appendChild(addToCanvasBtn);
             contentDiv.appendChild(actionsDiv);
@@ -588,11 +594,21 @@ class EducationAssistantUI {
         });
     }
 
-    addToCanvas(response, imageUrl = null, question = null) {
+    // Utility function to convert HTML to plain text
+    htmlToPlainText(html) {
+        // Create a temporary div element
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = html;
+        // Get text content and clean up extra whitespace
+        return tempDiv.textContent || tempDiv.innerText || '';
+    }
+
+    addToCanvas(response, imageUrl = null, question = null, plainTextResponse = null) {
         const canvasItem = {
             id: Date.now(),
             question: question || this.getLastUserMessage(),
-            response: response,
+            response: response, // HTML version for display
+            plainTextResponse: plainTextResponse || response, // Plain text version for PDF
             imageUrl: imageUrl,
             timestamp: this.getCurrentTime()
         };
@@ -629,25 +645,40 @@ class EducationAssistantUI {
             const itemDiv = document.createElement('div');
             itemDiv.className = 'canvas-item';
             
-            itemDiv.innerHTML = `
-                <div class="canvas-item-header">
-                    <span>Note ${index + 1} - ${item.timestamp}</span>
-                    <button class="canvas-remove-btn" onclick="educationAssistant.removeFromCanvas(${item.id})">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-                <div class="canvas-item-question">
-                    <strong>Q:</strong> ${item.question}
-                </div>
-                <div class="canvas-item-response">
-                    <strong>A:</strong> ${item.response}
-                </div>
-                ${item.imageUrl ? `
-                    <div class="canvas-item-image">
-                        <img src="${item.imageUrl}" alt="AI Generated Image">
-                    </div>
-                ` : ''}
+            // Create header
+            const headerDiv = document.createElement('div');
+            headerDiv.className = 'canvas-item-header';
+            headerDiv.innerHTML = `
+                <span>Note ${index + 1} - ${item.timestamp}</span>
+                <button class="canvas-remove-btn" onclick="educationAssistant.removeFromCanvas(${item.id})">
+                    <i class="fas fa-trash"></i>
+                </button>
             `;
+            
+            // Create question div
+            const questionDiv = document.createElement('div');
+            questionDiv.className = 'canvas-item-question';
+            questionDiv.innerHTML = `<strong>Q:</strong> ${item.question}`;
+            
+            // Create response div with HTML content
+            const responseDiv = document.createElement('div');
+            responseDiv.className = 'canvas-item-response';
+            const responseContent = document.createElement('div');
+            responseContent.innerHTML = `<strong>A:</strong> ${item.response}`;
+            responseDiv.appendChild(responseContent);
+            
+            // Add components to item
+            itemDiv.appendChild(headerDiv);
+            itemDiv.appendChild(questionDiv);
+            itemDiv.appendChild(responseDiv);
+            
+            // Add image if present
+            if (item.imageUrl) {
+                const imageDiv = document.createElement('div');
+                imageDiv.className = 'canvas-item-image';
+                imageDiv.innerHTML = `<img src="${item.imageUrl}" alt="AI Generated Image">`;
+                itemDiv.appendChild(imageDiv);
+            }
             
             this.canvasContent.appendChild(itemDiv);
         });
@@ -662,6 +693,214 @@ class EducationAssistantUI {
     async downloadCanvasPdf() {
         console.log('=== DOWNLOAD CANVAS PDF START ===');
         this.persistentLog('Download canvas PDF button clicked');
+        
+        if (this.canvasItems.length === 0) {
+            console.log('No canvas items to download');
+            this.showNotification('No notes to download', 'warning');
+            return;
+        }
+
+        console.log(`Canvas items to download: ${this.canvasItems.length}`);
+        this.persistentLog(`Canvas items: ${this.canvasItems.length}`);
+
+        // Show loading notification
+        this.showNotification('Generating formatted PDF...', 'info');
+
+        try {
+            // Try HTML2Canvas + jsPDF approach for formatted output
+            await this.downloadFormattedPdf();
+        } catch (error) {
+            console.error('Formatted PDF generation failed, falling back to text PDF:', error);
+            this.persistentLog(`Formatted PDF failed: ${error.message}`, 'error');
+            this.showNotification('Formatted PDF failed, using text version...', 'warning');
+            
+            // Fallback to text-based PDF
+            await this.downloadTextPdf();
+        }
+    }
+
+    async downloadFormattedPdf() {
+        console.log('=== FORMATTED PDF GENERATION START ===');
+        
+        // Check if required libraries are available
+        if (typeof window.html2canvas === 'undefined') {
+            throw new Error('html2canvas library not loaded');
+        }
+        
+        if (typeof window.jspdf === 'undefined') {
+            throw new Error('jsPDF library not loaded');
+        }
+
+        const { jsPDF } = window.jspdf;
+        
+        // Create a temporary container with the formatted content
+        const tempContainer = document.createElement('div');
+        tempContainer.style.cssText = `
+            position: absolute;
+            top: -9999px;
+            left: -9999px;
+            width: 800px;
+            background: white;
+            padding: 40px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+        `;
+        
+        // Add title
+        const titleDiv = document.createElement('div');
+        titleDiv.innerHTML = `
+            <h1 style="color: #2c3e50; text-align: center; margin-bottom: 30px; font-size: 24px;">
+                🎓 AI Education Assistant - Notes
+            </h1>
+            <hr style="border: none; border-top: 2px solid #e9ecef; margin-bottom: 30px;">
+        `;
+        tempContainer.appendChild(titleDiv);
+        
+        // Add each canvas item with formatting
+        this.canvasItems.forEach((item, index) => {
+            const itemDiv = document.createElement('div');
+            itemDiv.style.cssText = `
+                margin-bottom: 40px;
+                page-break-inside: avoid;
+                border: 1px solid #e9ecef;
+                border-radius: 8px;
+                padding: 20px;
+                background: #f8f9fa;
+            `;
+            
+            // Note header
+            const headerDiv = document.createElement('div');
+            headerDiv.innerHTML = `
+                <h2 style="color: #495057; font-size: 16px; margin: 0 0 15px 0; padding-bottom: 10px; border-bottom: 1px solid #dee2e6;">
+                    📝 Note ${index + 1} - ${item.timestamp}
+                </h2>
+            `;
+            
+            // Question
+            const questionDiv = document.createElement('div');
+            questionDiv.innerHTML = `
+                <div style="background: #e3f2fd; padding: 15px; border-radius: 6px; margin-bottom: 15px; border-left: 4px solid #2196f3;">
+                    <strong style="color: #1565c0;">Q:</strong> ${item.question}
+                </div>
+            `;
+            
+            // Answer with HTML formatting
+            const answerDiv = document.createElement('div');
+            answerDiv.innerHTML = `
+                <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #4caf50;">
+                    <strong style="color: #2e7d32;">A:</strong> ${item.response}
+                </div>
+            `;
+            
+            itemDiv.appendChild(headerDiv);
+            itemDiv.appendChild(questionDiv);
+            itemDiv.appendChild(answerDiv);
+            
+            // Add image if present
+            if (item.imageUrl) {
+                const imageDiv = document.createElement('div');
+                imageDiv.innerHTML = `
+                    <div style="margin-top: 15px; text-align: center;">
+                        <img src="${item.imageUrl}" style="max-width: 100%; height: auto; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" alt="AI Generated Image">
+                    </div>
+                `;
+                itemDiv.appendChild(imageDiv);
+            }
+            
+            tempContainer.appendChild(itemDiv);
+        });
+        
+        // Add footer
+        const footerDiv = document.createElement('div');
+        footerDiv.innerHTML = `
+            <hr style="border: none; border-top: 1px solid #e9ecef; margin: 30px 0 20px 0;">
+            <p style="text-align: center; color: #6c757d; font-size: 12px; margin: 0;">
+                Generated on ${new Date().toLocaleString()} | AI Education Assistant
+            </p>
+        `;
+        tempContainer.appendChild(footerDiv);
+        
+        // Add to DOM temporarily
+        document.body.appendChild(tempContainer);
+        
+        try {
+            console.log('Capturing HTML content with html2canvas...');
+            
+            // Capture the container as canvas
+            const canvas = await html2canvas(tempContainer, {
+                scale: 2, // Higher resolution
+                useCORS: true,
+                allowTaint: true,
+                backgroundColor: '#ffffff',
+                logging: false,
+                height: tempContainer.scrollHeight,
+                width: tempContainer.scrollWidth
+            });
+            
+            console.log('HTML captured, generating PDF...');
+            
+            // Create PDF
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const imgData = canvas.toDataURL('image/png');
+            
+            // Calculate dimensions
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            const imgWidth = pdfWidth - 20; // 10mm margin on each side
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+            
+            let yPosition = 10; // Start position
+            
+            if (imgHeight <= pdfHeight - 20) {
+                // Fits on one page
+                pdf.addImage(imgData, 'PNG', 10, yPosition, imgWidth, imgHeight);
+            } else {
+                // Split across multiple pages
+                const pageHeight = pdfHeight - 20; // Account for margins
+                let remainingHeight = imgHeight;
+                let sourceY = 0;
+                
+                while (remainingHeight > 0) {
+                    const currentPageHeight = Math.min(pageHeight, remainingHeight);
+                    const sourceHeight = (currentPageHeight * canvas.height) / imgHeight;
+                    
+                    // Create a temporary canvas for this page section
+                    const pageCanvas = document.createElement('canvas');
+                    pageCanvas.width = canvas.width;
+                    pageCanvas.height = sourceHeight;
+                    
+                    const pageCtx = pageCanvas.getContext('2d');
+                    pageCtx.drawImage(canvas, 0, sourceY, canvas.width, sourceHeight, 0, 0, canvas.width, sourceHeight);
+                    
+                    const pageImgData = pageCanvas.toDataURL('image/png');
+                    pdf.addImage(pageImgData, 'PNG', 10, 10, imgWidth, currentPageHeight);
+                    
+                    remainingHeight -= currentPageHeight;
+                    sourceY += sourceHeight;
+                    
+                    if (remainingHeight > 0) {
+                        pdf.addPage();
+                    }
+                }
+            }
+            
+            // Save the PDF
+            const fileName = `AI_Education_Notes_${new Date().toISOString().split('T')[0]}.pdf`;
+            pdf.save(fileName);
+            
+            console.log('Formatted PDF generated successfully');
+            this.showNotification('Formatted PDF downloaded successfully!', 'success');
+            
+        } finally {
+            // Clean up
+            document.body.removeChild(tempContainer);
+        }
+    }
+
+    async downloadTextPdf() {
+        console.log('=== TEXT PDF GENERATION START ===');
+        this.persistentLog('Text PDF generation as fallback');
         
         if (this.canvasItems.length === 0) {
             console.log('No canvas items to download');
@@ -731,9 +970,14 @@ class EducationAssistantUI {
                 pdf.text(questionLines, margin, yPosition);
                 yPosition += questionLines.length * 6 + 5;
 
-                // Answer
+                // Answer - use plain text version for PDF, with HTML fallback conversion
                 pdf.setFont(undefined, 'normal');
-                const responseText = `A: ${item.response}`;
+                let plainResponse = item.plainTextResponse;
+                if (!plainResponse && item.response) {
+                    // Fallback: convert HTML to plain text
+                    plainResponse = this.htmlToPlainText(item.response);
+                }
+                const responseText = `A: ${plainResponse || item.response}`;
                 const responseLines = pdf.splitTextToSize(responseText, maxWidth);
                 
                 // Check if response will fit on current page
@@ -1197,7 +1441,12 @@ class EducationAssistantUI {
 
         if (response.text) {
             console.log('Adding text response:', response.text);
-            this.addMessage(response.text, 'bot', null, response.image_url || null, originalQuestion);
+            // Use HTML version if available, otherwise fall back to text
+            const content = response.html || response.text;
+            const isHtml = !!response.html;
+            // Store both HTML and plain text for canvas functionality
+            const plainText = response.text;
+            this.addMessage(content, 'bot', null, response.image_url || null, originalQuestion, isHtml, plainText);
         }
         
         console.log('Files after response:', this.uploadedFilesList.length);
