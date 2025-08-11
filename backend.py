@@ -22,10 +22,14 @@ import base64
 from io import BytesIO
 from PIL import Image
 import logging
+from dotenv import load_dotenv
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Load environment variables from .env file
+load_dotenv()
 
 app = Flask(__name__)
 # Enable CORS for all routes with specific configuration
@@ -46,18 +50,28 @@ for folder in [UPLOAD_FOLDER, TEMP_FOLDER]:
     os.makedirs(folder, exist_ok=True)
 
 # OpenAI Configuration
-# You need to set your OpenAI API key as an environment variable
-# Set OPENAI_API_KEY in your environment or replace with your key
+# Load API key from .env file or environment variables
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 
-if not OPENAI_API_KEY:
-    logger.warning("⚠️  OPENAI_API_KEY not found in environment variables!")
-    logger.warning("Please set your OpenAI API key:")
-    logger.warning("Windows: set OPENAI_API_KEY=your_api_key_here")
-    logger.warning("Linux/Mac: export OPENAI_API_KEY=your_api_key_here")
+if not OPENAI_API_KEY or OPENAI_API_KEY == 'your_openai_api_key_here':
+    logger.warning("⚠️  OPENAI_API_KEY not configured!")
+    logger.warning("Please add your OpenAI API key to the .env file:")
+    logger.warning("1. Open the .env file in this directory")
+    logger.warning("2. Replace 'your_openai_api_key_here' with your actual API key")
+    logger.warning("3. Get your API key from: https://platform.openai.com/api-keys")
+    logger.warning("4. Restart the server after updating the .env file")
 
 # Initialize OpenAI client
-client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
+client = None
+if OPENAI_API_KEY and OPENAI_API_KEY != 'your_openai_api_key_here':
+    try:
+        client = OpenAI(api_key=OPENAI_API_KEY)
+        logger.info("✅ OpenAI client initialized successfully")
+    except Exception as e:
+        logger.error(f"❌ Error initializing OpenAI client: {str(e)}")
+        client = None
+else:
+    logger.warning("⚠️  OpenAI client not initialized - API key not configured")
 
 def cleanup_files():
     """Delete all files from uploads and temp directories"""
@@ -304,7 +318,7 @@ def log_request(message, files_info=None, education_context=None):
 @app.route('/')
 def home():
     """Simple home page to verify server is running"""
-    api_status = "✅ Connected" if OPENAI_API_KEY else "❌ Not Configured"
+    api_status = "✅ Connected" if (OPENAI_API_KEY and OPENAI_API_KEY != 'your_openai_api_key_here') else "❌ Not Configured"
     
     return f"""
     <h1>🎓 AI Education Assistant Backend</h1>
@@ -331,9 +345,9 @@ def home():
     <h2>Setup Instructions:</h2>
     <ol>
         <li>Get your OpenAI API key from <a href="https://platform.openai.com/api-keys">platform.openai.com</a></li>
-        <li>Set environment variable: <code>set OPENAI_API_KEY=your_key_here</code></li>
-        <li>Install required packages: <code>pip install openai PyMuPDF Pillow</code></li>
-        <li>Restart this server</li>
+        <li>Open the <code>.env</code> file in this directory</li>
+        <li>Replace <code>your_openai_api_key_here</code> with your actual API key</li>
+        <li>Save the file and restart this server</li>
     </ol>
     
     <h2>How It Works:</h2>
@@ -350,7 +364,7 @@ def status():
     """API status endpoint"""
     return jsonify({
         "status": "running",
-        "ai_configured": bool(OPENAI_API_KEY),
+        "ai_configured": bool(OPENAI_API_KEY and OPENAI_API_KEY != 'your_openai_api_key_here'),
         "timestamp": datetime.now().isoformat(),
         "endpoints": ["/api/chat", "/api/status", "/api/test"]
     })
@@ -360,7 +374,7 @@ def test():
     """Test endpoint to verify API is working"""
     return jsonify({
         "message": "AI Education Assistant Backend is running!",
-        "ai_status": "configured" if OPENAI_API_KEY else "not_configured",
+        "ai_status": "configured" if (OPENAI_API_KEY and OPENAI_API_KEY != 'your_openai_api_key_here') else "not_configured",
         "timestamp": datetime.now().isoformat()
     })
 
@@ -377,9 +391,9 @@ def chat():
         
     try:
         # Check if OpenAI is configured
-        if not OPENAI_API_KEY:
+        if not OPENAI_API_KEY or OPENAI_API_KEY == 'your_openai_api_key_here':
             return jsonify({
-                "error": "OpenAI API key not configured. Please set OPENAI_API_KEY environment variable."
+                "error": "OpenAI API key not configured. Please add your API key to the .env file and restart the server."
             }), 500
         
         # Get the message from form data
@@ -532,14 +546,17 @@ if __name__ == '__main__':
     print(f"📋 Allowed extensions: {ALLOWED_EXTENSIONS}")
     
     # Check OpenAI configuration
-    if OPENAI_API_KEY:
-        print(f"🤖 OpenAI API: ✅ Configured")
+    if OPENAI_API_KEY and OPENAI_API_KEY != 'your_openai_api_key_here':
+        print(f"🤖 OpenAI API: ✅ Configured (.env file)")
         print(f"🧠 Model: GPT-4 with vision capabilities")
     else:
         print(f"🤖 OpenAI API: ❌ NOT CONFIGURED")
-        print(f"⚠️  Please set OPENAI_API_KEY environment variable!")
-        print(f"💡 Get your API key from: https://platform.openai.com/api-keys")
-        print(f"🔧 Set it with: set OPENAI_API_KEY=your_key_here")
+        print(f"⚠️  Please configure your OpenAI API key in the .env file!")
+        print(f"💡 Steps to configure:")
+        print(f"   1. Open the .env file in this directory")
+        print(f"   2. Replace 'your_openai_api_key_here' with your actual API key")
+        print(f"   3. Get your API key from: https://platform.openai.com/api-keys")
+        print(f"   4. Restart this server")
     
     # Clean up any existing files from previous sessions
     print(f"\n🧹 Cleaning up previous session files...")

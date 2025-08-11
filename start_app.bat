@@ -44,13 +44,18 @@ if "%backend_choice%"=="1" (
         echo.
         echo ⚠️  WARNING: OPENAI_API_KEY not found!
         echo.
-        set /p "api_key=Enter your OpenAI API key (or press Enter to continue anyway): "
+        echo 💡 To configure your API key:
+        echo    1. Open the .env file in this directory
+        echo    2. Replace 'your_openai_api_key_here' with your actual API key
+        echo    3. Get your API key from: https://platform.openai.com/api-keys
+        echo    4. Restart this script
+        echo.
+        set /p "api_key=Or enter your OpenAI API key now (or press Enter to continue anyway): "
         if not "!api_key!"=="" (
             set OPENAI_API_KEY=!api_key!
             echo ✅ API key set for this session.
         ) else (
             echo ❌ No API key provided. Backend will run but AI features won't work.
-            echo Get your API key from: https://platform.openai.com/api-keys
         )
         echo.
     ) else (

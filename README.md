@@ -1,6 +1,32 @@
-# AI Chatbot with RAG Pipeline - Frontend UI
+# AI Education Assistant
 
-This is a complete frontend interface for an AI chatbot with RAG (Retrieval-Augmented Generation) pipeline capabilities. The UI provides a clean, modern interface for document upload, chat interaction, image display, and analysis results.
+This is a complete AI-powered education assistant with both frontend and backend components. The application provides an intelligent interface for teachers to interact with educational content using ChatGPT API integration.
+
+## 🚀 Quick Start
+
+### 1. Setup
+```bash
+# Run the setup script
+setup.bat
+```
+
+### 2. Configure API Key
+1. Open the `.env` file in the project directory
+2. Replace `your_openai_api_key_here` with your actual OpenAI API key:
+   ```
+   OPENAI_API_KEY=sk-your-actual-api-key-here
+   ```
+3. Get your API key from [OpenAI Platform](https://platform.openai.com/api-keys)
+
+### 3. Start the Application
+```bash
+# Run the application
+start_app.bat
+```
+
+Choose between:
+- **AI Backend** (Real ChatGPT - requires API key)
+- **Test Backend** (Mock responses - no API key needed)
 
 ## Features
 

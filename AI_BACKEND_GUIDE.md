@@ -29,16 +29,15 @@ pip install -r requirements.txt
 3. Generate a new API key
 4. Copy the key (starts with `sk-...`)
 
-#### 3. Set Environment Variable
-**Windows:**
-```cmd
-set OPENAI_API_KEY=sk-your-api-key-here
-```
+#### 3. Configure Environment Variables
+1. Open the `.env` file in the project directory
+2. Replace `your_openai_api_key_here` with your actual API key:
+   ```
+   OPENAI_API_KEY=sk-your-actual-api-key-here
+   ```
+3. Save the file
 
-**Linux/Mac:**
-```bash
-export OPENAI_API_KEY=sk-your-api-key-here
-```
+**Note**: The `.env` file keeps your API key secure and prevents it from being committed to version control.
 
 #### 4. Start the Backend
 ```bash
