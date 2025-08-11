@@ -8,10 +8,16 @@ Flask-CORS==4.0.0
 # OpenAI API (updated to latest compatible version)
 openai>=1.99.0
 
+# Groq API (for alternative AI backend)
+groq>=0.13.0
+
+# Markdown to HTML conversion
+markdown>=3.7
+
 # PDF processing
 PyMuPDF>=1.26.0
 
-# Image processing
+# Image processing (for PDF to image conversion)
 Pillow>=11.3.0
 
 # Utilities

@@ -11,7 +11,8 @@ This project now has two backend options:
 
 ### Features
 - **Real ChatGPT Integration**: Uses OpenAI's GPT-4 with vision capabilities
-- **PDF Context Processing**: Extracts current page as image and sends to AI
+- **PDF to Image Processing**: Converts PDF pages to high-quality images preserving all content
+- **Complete Content Preservation**: Maintains text, images, diagrams, and formatting
 - **Educational Context**: Considers class level, languages, student count
 - **Smart Prompting**: Builds education-specific prompts for better responses
 - **File Management**: Automatic cleanup of uploaded files and temp images
@@ -57,13 +58,13 @@ start_ai_backend.bat
 ### How It Works
 
 1. **Receives Request**: Teacher sends message + PDF + education context
-2. **Processes PDF**: Extracts current page as high-quality image
+2. **Processes PDF**: Converts current page to high-quality image (200 DPI)
 3. **Builds Context**: Creates education-specific prompt with:
    - Teacher's language
    - Student's language  
    - Class level and size
-   - Current PDF page content
-4. **AI Analysis**: Sends context + image to GPT-4 for analysis
+   - Complete visual context from PDF page
+4. **AI Analysis**: Sends context + page image to GPT-4 vision model for comprehensive analysis
 5. **Returns Response**: Classroom-ready teaching suggestions
 
 ### API Endpoints
@@ -79,7 +80,7 @@ The AI receives and considers:
 - **Class Level**: Adapts complexity for Class 1-10
 - **Student Count**: Suggests activities for class size (10-50 students)
 - **Languages**: Bilingual support when teacher/student languages differ
-- **PDF Content**: Current page image for visual context
+- **Complete Page Content**: High-quality image showing all text, images, diagrams, and formatting
 - **Page Context**: Current page number and total pages
 
 ### Example AI Responses
@@ -172,8 +173,9 @@ The frontend automatically works with both backends. Make sure:
 - Restart the backend after setting the key
 
 **"Error converting PDF page to image"**
-- Install PyMuPDF: `pip install PyMuPDF`
-- Check if PDF file is corrupted
+- Install PyMuPDF and Pillow: `pip install PyMuPDF Pillow`
+- Check if PDF file is corrupted or password-protected
+- Ensure sufficient disk space for image conversion
 
 **"AI service error"**
 - Check your OpenAI API key is valid
@@ -193,7 +195,7 @@ AI_for_Education/
 ├── setup_backend.bat       # Setup script
 ├── start_ai_backend.bat    # Start AI backend
 ├── uploads/                # PDF upload folder
-├── temp_images/            # Temporary image files
+├── temp_images/            # Temporary PDF context files
 ├── script.js               # Frontend JavaScript
 ├── index.html              # Frontend HTML
 └── styles.css              # Frontend CSS
@@ -209,8 +211,9 @@ AI_for_Education/
 
 ## 💰 Cost Considerations
 
-- GPT-4 with vision is more expensive than GPT-3.5
-- Each request with image costs more than text-only
+- GPT-4 with vision is more expensive than text-only models
+- Each request with high-quality image costs more than text-only
+- High DPI image processing provides better results but uses more tokens
 - Monitor usage on [OpenAI Usage Dashboard](https://platform.openai.com/usage)
 - Consider implementing rate limiting for production use
 
