@@ -1,6 +1,6 @@
 @echo off
 echo ==========================================
-echo    AI Chatbot Backend Setup Script
+echo   AI Education Assistant Setup Script
 echo ==========================================
 echo.
 
@@ -14,6 +14,7 @@ if %errorlevel% neq 0 (
 )
 
 echo ✓ Python is installed
+python --version
 echo.
 
 REM Check if pip is available
@@ -56,28 +57,62 @@ echo.
 
 REM Install requirements
 echo Installing Python dependencies...
+echo This includes Flask, OpenAI, PDF processing, and other required packages...
 pip install -r requirements.txt
 
 if %errorlevel% neq 0 (
     echo ERROR: Failed to install dependencies
-    pause
-    exit /b 1
+    echo Trying with --upgrade flag...
+    pip install --upgrade -r requirements.txt
+    if %errorlevel% neq 0 (
+        echo ERROR: Installation failed. Please check your internet connection.
+        pause
+        exit /b 1
+    )
 )
 
 echo.
 echo ✓ Dependencies installed successfully
 echo.
+
+REM Test imports
+echo Testing package imports...
+python -c "import flask, flask_cors, openai, fitz, PIL, dotenv; print('✓ All packages working correctly!')" 2>nul
+if %errorlevel% neq 0 (
+    echo ⚠️  Some packages may not be working correctly, but continuing...
+) else (
+    echo ✓ All packages verified working
+)
+echo.
+
+REM Create directories
+echo Creating necessary directories...
+if not exist "uploads" mkdir uploads
+if not exist "temp_images" mkdir temp_images
+echo ✓ Directories created
+echo.
+
 echo ==========================================
 echo        Setup Complete!
 echo ==========================================
 echo.
-echo To start the backend server, run:
-echo     run_backend.bat
+echo 🎓 AI Education Assistant is ready to use!
 echo.
-echo Or manually:
-echo     .venv\Scripts\activate.bat
-echo     python test_backend.py
+echo To start the application:
+echo     start_app.bat
 echo.
-echo Then open index.html in your browser
+echo Available backends:
+echo   1. 🤖 AI Backend (Real ChatGPT - requires OpenAI API key)
+echo   2. 🧪 Test Backend (Mock responses - no API key needed)
+echo.
+echo Features ready:
+echo   ✅ Web interface with responsive mobile design
+echo   ✅ PDF upload and processing
+echo   ✅ Multi-language support
+echo   ✅ Class level customization
+echo   ✅ Educational context processing
+echo.
+echo For AI backend, you'll need an OpenAI API key from:
+echo https://platform.openai.com/api-keys
 echo.
 pause

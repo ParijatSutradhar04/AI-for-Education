@@ -1,4 +1,5 @@
 @echo off
+setlocal enabledelayedexpansion
 echo ==========================================
 echo    Starting AI Education Assistant
 echo ==========================================
@@ -22,10 +23,57 @@ if %errorlevel% neq 0 (
 
 echo ✓ Virtual environment activated
 echo.
+
+REM Backend Selection Menu
+echo ==========================================
+echo         Choose Backend Mode
+echo ==========================================
+echo.
+echo 1. 🤖 AI Backend (Real ChatGPT - Requires OpenAI API Key)
+echo 2. 🧪 Test Backend (Mock responses - No API Key needed)
+echo.
+set /p "backend_choice=Enter your choice (1 or 2): "
+
+if "%backend_choice%"=="1" (
+    set "backend_file=backend.py"
+    set "backend_name=AI Backend"
+    set "backend_type=Real ChatGPT Integration"
+    
+    REM Check for OpenAI API Key
+    if "%OPENAI_API_KEY%"=="" (
+        echo.
+        echo ⚠️  WARNING: OPENAI_API_KEY not found!
+        echo.
+        set /p "api_key=Enter your OpenAI API key (or press Enter to continue anyway): "
+        if not "!api_key!"=="" (
+            set OPENAI_API_KEY=!api_key!
+            echo ✅ API key set for this session.
+        ) else (
+            echo ❌ No API key provided. Backend will run but AI features won't work.
+            echo Get your API key from: https://platform.openai.com/api-keys
+        )
+        echo.
+    ) else (
+        echo ✅ OpenAI API key detected.
+    )
+) else if "%backend_choice%"=="2" (
+    set "backend_file=test_backend.py"
+    set "backend_name=Test Backend"
+    set "backend_type=Mock Responses"
+    echo ✅ Using test backend with mock responses.
+) else (
+    echo Invalid choice. Defaulting to Test Backend.
+    set "backend_file=test_backend.py"
+    set "backend_name=Test Backend"
+    set "backend_type=Mock Responses"
+)
+
+echo.
 echo ==========================================
 echo      Starting Backend and Frontend
 echo ==========================================
 echo.
+echo 🤖 Backend Mode: %backend_type%
 echo 🚀 Backend will be available at:
 echo     http://localhost:5000
 echo.
@@ -40,8 +88,8 @@ echo.
 echo ==========================================
 
 REM Start backend server in background
-echo Starting backend server...
-start "AI Backend Server" cmd /c "python test_backend.py"
+echo Starting %backend_name%...
+start "%backend_name%" cmd /c "python %backend_file%"
 
 REM Wait a moment for backend to start
 timeout /t 3 /nobreak >nul
