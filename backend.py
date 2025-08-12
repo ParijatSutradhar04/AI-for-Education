@@ -24,6 +24,11 @@ from PIL import Image
 import logging
 from dotenv import load_dotenv
 import markdown
+import re
+import requests
+import uuid
+from urllib.parse import urlparse
+import asyncio
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -196,7 +201,7 @@ def build_education_prompt(message, education_context, file_context=None):
     total_pages = education_context.get('total_pages', 1)
     
     # Base system prompt
-    system_prompt = f"""You are an AI Education Assistant helping a teacher plan lessons and create educational content.
+    system_prompt = f"""You are an AI Education Assistant helping a teacher plan lessons and create educational content for students who are mostly from under developed villages, in India, with limited access to resources, and lower socio-economic backgrounds.
 
 EDUCATION CONTEXT:
 - Teacher's Language: {teacher_lang.title()}
@@ -208,10 +213,10 @@ GUIDELINES:
 1. Provide practical, classroom-ready advice
 2. Consider the class size ({class_strength} students) in your suggestions
 3. Adapt content for Class {class_level} comprehension level
-4. If teacher and student languages differ, provide bilingual support strategies
+4. If teacher and student languages differ, provide bilingual support strategies, including key vocabulary and phrases in Student's Language
 5. Focus on interactive and engaging teaching methods
-6. Provide specific examples and activities
-7. Consider diverse learning styles and abilities
+6. Provide specific examples and activities pertaining to the lesson topic and the background of students
+7. Consider diverse learning styles and abilities, pertaining to the environment of the students.
 
 RESPONSE FORMAT:
 - Use clear, actionable language
@@ -219,6 +224,7 @@ RESPONSE FORMAT:
 - Suggest assessment methods
 - Provide differentiation strategies for diverse learners
 - Keep responses concise but comprehensive
+- Main focus should be on aligning with the students' backgrounds and needs
 """
 
     # Add file context if available
@@ -286,7 +292,7 @@ async def call_openai_api(messages, image_base64=None):
         
         # Make API call with vision model for image processing
         response = client.chat.completions.create(
-            model="gpt-4o",  # GPT-4 with vision capabilities for image analysis
+            model="gpt-4.1-mini",  # GPT-4 with vision capabilities for image analysis
             messages=api_messages,
             max_tokens=1500,
             temperature=0.7
@@ -300,6 +306,139 @@ async def call_openai_api(messages, image_base64=None):
     except Exception as e:
         logger.error(f"OpenAI API error: {str(e)}")
         return {"error": f"AI service error: {str(e)}"}
+
+def detect_image_generation_request(message):
+    """Detect if the user is requesting image generation"""
+    image_keywords = [
+        r"generate\s+an?\s+image",
+        r"create\s+an?\s+image", 
+        r"draw\s+an?\s+image",
+        r"make\s+an?\s+image",
+        r"show\s+me\s+an?\s+image",
+        r"generate\s+a\s+picture",
+        r"create\s+a\s+picture",
+        r"draw\s+a\s+picture",
+        r"make\s+a\s+picture",
+        r"illustrate",
+        r"visualize",
+        r"sketch"
+    ]
+    
+    message_lower = message.lower()
+    
+    for pattern in image_keywords:
+        if re.search(pattern, message_lower):
+            return True
+    return False
+
+def extract_image_description(message):
+    """Extract the description of what image to generate"""
+    # Remove common prefixes to get the core description
+    prefixes_to_remove = [
+        r"generate\s+an?\s+image\s+(of|about|showing|depicting)?\s*",
+        r"create\s+an?\s+image\s+(of|about|showing|depicting)?\s*",
+        r"draw\s+an?\s+image\s+(of|about|showing|depicting)?\s*",
+        r"make\s+an?\s+image\s+(of|about|showing|depicting)?\s*",
+        r"show\s+me\s+an?\s+image\s+(of|about|showing|depicting)?\s*",
+        r"generate\s+a\s+picture\s+(of|about|showing|depicting)?\s*",
+        r"create\s+a\s+picture\s+(of|about|showing|depicting)?\s*",
+        r"draw\s+a\s+picture\s+(of|about|showing|depicting)?\s*",
+        r"make\s+a\s+picture\s+(of|about|showing|depicting)?\s*",
+        r"illustrate\s+",
+        r"visualize\s+",
+        r"sketch\s+"
+    ]
+    
+    description = message
+    for prefix in prefixes_to_remove:
+        description = re.sub(prefix, "", description, flags=re.IGNORECASE)
+    
+    return description.strip()
+
+async def download_and_save_image(image_url, description):
+    """Download image from DALL-E URL and save it locally"""
+    try:
+        # Create unique filename
+        image_id = str(uuid.uuid4())[:8]
+        safe_description = re.sub(r'[^a-zA-Z0-9_-]', '_', description[:30])
+        filename = f"dalle_{image_id}_{safe_description}.png"
+        filepath = os.path.join(TEMP_FOLDER, filename)
+        
+        logger.info(f"📥 Downloading image from: {image_url}")
+        logger.info(f"💾 Saving as: {filepath}")
+        
+        # Download the image
+        response = requests.get(image_url, timeout=30)
+        response.raise_for_status()
+        
+        # Save the image
+        with open(filepath, 'wb') as f:
+            f.write(response.content)
+        
+        # Create local URL
+        local_url = f"/temp_images/{filename}"
+        logger.info(f"✅ Image saved locally: {local_url}")
+        
+        return {
+            "local_url": local_url,
+            "filename": filename,
+            "filepath": filepath
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ Failed to download image: {str(e)}")
+        return None
+
+async def generate_image_with_dalle(description, education_context):
+    """Generate an image using OpenAI's DALL-E API and save it locally"""
+    try:
+        if not client:
+            return {"error": "OpenAI API key not configured"}
+        
+        class_level = education_context.get('class_level', '6')
+        
+        # Enhance the prompt for educational content
+        enhanced_prompt = f"Educational illustration for Class {class_level} students: {description}. Make it colorful, clear, and age-appropriate for learning."
+        
+        # Limit prompt length (DALL-E has a 1000 character limit)
+        if len(enhanced_prompt) > 900:
+            enhanced_prompt = enhanced_prompt[:900] + "..."
+        
+        logger.info(f"🎨 Generating image with DALL-E: {enhanced_prompt}")
+        
+        response = client.images.generate(
+            model="dall-e-3",
+            prompt=enhanced_prompt,
+            size="1024x1024",
+            quality="standard",
+            n=1,
+        )
+        
+        image_url = response.data[0].url
+        logger.info(f"✅ Image generated successfully: {image_url}")
+        
+        # Download and save the image locally
+        local_image_info = await download_and_save_image(image_url, description)
+        
+        result = {
+            "image_url": image_url,  # Keep original DALL-E URL for reference
+            "description": description,
+            "enhanced_prompt": enhanced_prompt
+        }
+        
+        # Add local URL if download was successful
+        if local_image_info:
+            result["local_url"] = local_image_info["local_url"]
+            result["filename"] = local_image_info["filename"]
+            logger.info(f"🏠 Local image URL: {local_image_info['local_url']}")
+        else:
+            logger.warning("⚠️ Failed to save image locally, using original DALL-E URL")
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"DALL-E API error: {str(e)}")
+        return {"error": f"Image generation error: {str(e)}"}
 
 def log_request(message, files_info=None, education_context=None):
     """Log incoming requests for debugging"""
@@ -337,6 +476,7 @@ def home():
     <h2>AI Features:</h2>
     <ul>
         <li>✅ OpenAI GPT-4 with vision capabilities</li>
+        <li>✅ DALL-E 3 image generation for educational content</li>
         <li>✅ PDF page image conversion (preserves all content including images)</li>
         <li>✅ Educational content generation</li>
         <li>✅ Multi-language teaching support</li>
@@ -355,9 +495,17 @@ def home():
     <h2>How It Works:</h2>
     <ul>
         <li>📝 Receives teacher questions with education context</li>
+        <li>🎨 Generates educational images when requested (e.g., "Generate an image of...")</li>
         <li>📄 Converts PDF pages to high-quality images (preserving all visual content)</li>
         <li>🤖 Sends context + image to GPT-4 vision model for comprehensive analysis</li>
         <li>🎯 Returns classroom-ready teaching suggestions</li>
+    </ul>
+    
+    <h2>Image Generation Usage:</h2>
+    <ul>
+        <li>🎨 Use phrases like "Generate an image of...", "Create a picture of...", "Illustrate..."</li>
+        <li>📚 Images are automatically optimized for educational use and class level</li>
+        <li>🎯 AI provides teaching guidance on how to use the generated images</li>
     </ul>
     """
 
@@ -495,17 +643,55 @@ def chat():
             'user': user_prompt
         }
         
+        # Check if this is an image generation request
+        is_image_request = detect_image_generation_request(message)
+        generated_image = None
+        
+        if is_image_request:
+            logger.info("🎨 Detected image generation request")
+            image_description = extract_image_description(message)
+            logger.info(f"🎨 Image description: {image_description}")
+            
+            try:
+                generated_image = asyncio.run(generate_image_with_dalle(image_description, education_context))
+                logger.info(f"🎨 Image generation result: {generated_image}")
+            except Exception as e:
+                logger.error(f"🎨 Image generation exception: {str(e)}")
+                generated_image = {"error": f"Image generation failed: {str(e)}"}
+            
+            if generated_image and 'error' not in generated_image:
+                # Modify the user prompt to include context about the generated image
+                messages['user'] += f"\n\nI have generated an educational image for you based on: '{image_description}'. The image has been created and will be displayed to the user. Please provide educational guidance on how to use this image effectively in your Class {education_context.get('class_level', '6')} classroom with {education_context.get('class_strength', '30')} students."
+        
         logger.info("🤖 Sending request to OpenAI API...")
         
         # Call OpenAI API with image context
-        import asyncio
         response = asyncio.run(call_openai_api(messages, image_base64))
         
         if 'error' in response:
             logger.error(f"AI API Error: {response['error']}")
             return jsonify(response), 500
         
+        # Add generated image to response if available
+        if generated_image and 'error' not in generated_image:
+            response['generated_image'] = generated_image
+            logger.info(f"✅ Added generated image to response: {generated_image.get('image_url', 'No URL')}")
+        elif generated_image and 'error' in generated_image:
+            # If image generation failed, mention it in the text response
+            logger.warning(f"⚠️ Image generation failed: {generated_image['error']}")
+            response['text'] += f"\n\n*Note: I attempted to generate an image for you, but encountered an issue: {generated_image['error']}*"
+            response['html'] += f"<p><em>Note: I attempted to generate an image for you, but encountered an issue: {generated_image['error']}</em></p>"
+        elif is_image_request:
+            logger.warning("⚠️ Image generation was requested but no result was returned")
+        
         logger.info("✅ Received response from OpenAI API")
+        logger.info(f"📤 Final response structure: {list(response.keys())}")
+        
+        # Log the complete response for debugging
+        if 'generated_image' in response:
+            logger.info(f"🎨 Response contains generated_image: {response['generated_image']}")
+        
+        logger.info(f"📤 Complete response being sent: {response}")
         
         # Ensure proper JSON response with correct headers
         json_response = jsonify(response)
@@ -525,6 +711,15 @@ def chat():
 def uploaded_file(filename):
     """Serve uploaded files (for testing purposes)"""
     return send_from_directory(UPLOAD_FOLDER, filename)
+
+@app.route('/temp_images/<filename>')
+def temp_image_file(filename):
+    """Serve temporarily saved DALL-E images"""
+    try:
+        return send_from_directory(TEMP_FOLDER, filename)
+    except FileNotFoundError:
+        logger.error(f"❌ Temp image not found: {filename}")
+        return jsonify({"error": "Image not found"}), 404
 
 @app.errorhandler(413)
 def too_large(e):
@@ -576,6 +771,7 @@ if __name__ == '__main__':
     print("   GET  http://localhost:5000/api/test")
     print("\n🎯 AI Features:")
     print("   ✅ Real ChatGPT integration with vision")
+    print("   ✅ DALL-E 3 image generation for education")
     print("   ✅ PDF page to image conversion")
     print("   ✅ Educational content generation")
     print("   ✅ Multi-language teaching support")
@@ -583,11 +779,15 @@ if __name__ == '__main__':
     print("   ✅ Automatic file cleanup")
     print("\n📊 Backend processes:")
     print("   📝 Teacher questions + education context")
+    print("   🎨 Image generation with DALL-E 3")
     print("   📄 PDF pages → high-quality images")
     print("   🤖 AI analysis with visual context")
     print("   🎯 Classroom-ready teaching suggestions")
     print("\n💡 Required packages:")
-    print("   pip install openai PyMuPDF Pillow python-dotenv")
+    print("   pip install openai PyMuPDF Pillow python-dotenv markdown")
+    print("\n🎨 Image Generation:")
+    print("   Use: 'Generate an image of...', 'Create a picture of...', 'Illustrate...'")
+    print("   Images are optimized for educational use and class level")
     print("\n" + "="*60)
     
     try:

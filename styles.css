@@ -1209,3 +1209,93 @@ body {
 .message-content a:hover {
     text-decoration: underline;
 }
+
+/* Generated Image Styles */
+.message-image {
+    margin: 15px 0;
+    text-align: center;
+}
+
+.message-image img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.message-image img:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+.image-caption {
+    font-size: 0.9em;
+    color: #666;
+    margin-bottom: 8px;
+    font-style: italic;
+}
+
+/* Canvas Item Image Styles */
+.canvas-item-image {
+    margin: 15px 0;
+    text-align: center;
+}
+
+.canvas-item-image img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+}
+
+.canvas-item-image img:hover {
+    opacity: 0.9;
+}
+
+.image-description {
+    font-size: 0.9em;
+    color: #666;
+    margin-bottom: 8px;
+    font-style: italic;
+}
+
+/* Image Modal Styles */
+.image-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    cursor: pointer;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.image-modal .modal-content {
+    max-width: 90vw;
+    max-height: 90vh;
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from { transform: scale(0.8); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}

@@ -526,7 +526,7 @@ class EducationAssistantUI {
         return formData;
     }
 
-    addMessage(content, sender, timestamp = null, imageUrl = null, originalQuestion = null, isHtml = false, plainText = null) {
+    addMessage(content, sender, timestamp = null, imageUrl = null, originalQuestion = null, isHtml = false, plainText = null, imageData = null) {
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${sender}-message`;
 
@@ -548,13 +548,74 @@ class EducationAssistantUI {
         
         // Add image if provided
         if (imageUrl) {
+            console.log('🎨 Adding image to message:', imageUrl);
+            console.log('🎨 Image data:', imageData);
+            this.persistentLog(`🎨 CREATING IMAGE ELEMENT: ${imageUrl}`);
+            
             const imageDiv = document.createElement('div');
             imageDiv.className = 'message-image';
+            
+            // Add image description if available
+            if (imageData && imageData.description) {
+                const imageCaption = document.createElement('div');
+                imageCaption.className = 'image-caption';
+                imageCaption.innerHTML = `<strong>Generated Image:</strong> ${imageData.description}`;
+                imageCaption.style.cssText = 'font-size: 0.9em; color: #666; margin-bottom: 8px; font-style: italic;';
+                imageDiv.appendChild(imageCaption);
+            }
+            
             const img = document.createElement('img');
             img.src = imageUrl;
-            img.alt = 'AI Generated Image';
+            img.alt = imageData ? `Generated: ${imageData.description}` : 'AI Generated Image';
+            img.style.cssText = 'max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,0.15); cursor: pointer;';
+            
+            console.log('🖼️ Image element created with src:', img.src);
+            this.persistentLog(`🖼️ IMAGE ELEMENT CREATED: ${img.src}`);
+            
+            // Add error handling for image loading
+            img.onload = () => {
+                console.log('✅ Image loaded successfully:', imageUrl);
+                chatApp.persistentLog(`✅ Image loaded successfully: ${imageUrl}`);
+            };
+            img.onerror = (error) => {
+                console.error('❌ Image failed to load:', imageUrl);
+                console.error('Error details:', error);
+                console.error('Image naturalWidth:', img.naturalWidth);
+                console.error('Image naturalHeight:', img.naturalHeight);
+                console.error('Image complete:', img.complete);
+                
+                // Log more details for debugging
+                chatApp.persistentLog(`❌ IMAGE LOAD FAILED: ${imageUrl}`);
+                chatApp.persistentLog(`Error type: ${error.type || 'unknown'}`);
+                chatApp.persistentLog(`Image complete: ${img.complete}`);
+                chatApp.persistentLog(`Natural dimensions: ${img.naturalWidth}x${img.naturalHeight}`);
+                
+                // Try to determine the error type
+                const errorMessage = img.complete && img.naturalHeight === 0 ? 
+                    'Image URL is invalid or unreachable (possibly CORS issue)' : 
+                    'Image failed to load (network or server issue)';
+                
+                img.style.display = 'none';
+                const errorDiv = document.createElement('div');
+                errorDiv.innerHTML = `❌ ${errorMessage}<br><small>URL: ${imageUrl}</small>`;
+                errorDiv.style.cssText = 'color: #dc3545; font-style: italic; padding: 10px; border: 1px dashed #dc3545; border-radius: 4px; font-size: 12px; word-break: break-all;';
+                imageDiv.appendChild(errorDiv);
+            };
+            
+            // Add click handler to view full size
+            img.addEventListener('click', () => {
+                this.showImageModal(imageUrl, imageData);
+            });
+            
             imageDiv.appendChild(img);
             contentDiv.appendChild(imageDiv);
+            console.log('✅ Image div appended to content. Image div HTML:', imageDiv.outerHTML);
+            this.persistentLog('✅ IMAGE DIV APPENDED TO CONTENT');
+            this.persistentLog(`Image div classes: ${imageDiv.className}`);
+            this.persistentLog(`Content div children count: ${contentDiv.children.length}`);
+        } else {
+            console.log('❌ No imageUrl provided to addMessage function');
+            this.persistentLog('❌ NO IMAGE URL PROVIDED TO addMessage');
         }
         
         // Add "Add to Canvas" button for bot messages
@@ -567,7 +628,7 @@ class EducationAssistantUI {
             addToCanvasBtn.innerHTML = '<i class="fas fa-plus"></i> Add to Notes';
             // Use plain text for PDF, but content for display
             const textForPdf = plainText || content;
-            addToCanvasBtn.onclick = () => this.addToCanvas(content, imageUrl, originalQuestion, textForPdf);
+            addToCanvasBtn.onclick = () => this.addToCanvas(content, imageUrl, originalQuestion, textForPdf, imageData);
             
             actionsDiv.appendChild(addToCanvasBtn);
             contentDiv.appendChild(actionsDiv);
@@ -590,8 +651,11 @@ class EducationAssistantUI {
             sender,
             timestamp: timestamp || this.getCurrentTime(),
             imageUrl,
+            imageData, // Store full image data
             originalQuestion
         });
+        
+        console.log('✅ Message added to chat history with imageUrl:', imageUrl);
     }
 
     // Utility function to convert HTML to plain text
@@ -603,13 +667,14 @@ class EducationAssistantUI {
         return tempDiv.textContent || tempDiv.innerText || '';
     }
 
-    addToCanvas(response, imageUrl = null, question = null, plainTextResponse = null) {
+    addToCanvas(response, imageUrl = null, question = null, plainTextResponse = null, imageData = null) {
         const canvasItem = {
             id: Date.now(),
             question: question || this.getLastUserMessage(),
             response: response, // HTML version for display
             plainTextResponse: plainTextResponse || response, // Plain text version for PDF
             imageUrl: imageUrl,
+            imageData: imageData, // Store full image data including description
             timestamp: this.getCurrentTime()
         };
 
@@ -676,7 +741,16 @@ class EducationAssistantUI {
             if (item.imageUrl) {
                 const imageDiv = document.createElement('div');
                 imageDiv.className = 'canvas-item-image';
-                imageDiv.innerHTML = `<img src="${item.imageUrl}" alt="AI Generated Image">`;
+                
+                // Add image description if available
+                let imageHTML = '';
+                if (item.imageData && item.imageData.description) {
+                    imageHTML += `<div class="image-description" style="font-size: 0.9em; color: #666; margin-bottom: 8px; font-style: italic;"><strong>Generated Image:</strong> ${item.imageData.description}</div>`;
+                }
+                
+                imageHTML += `<img src="${item.imageUrl}" alt="${item.imageData && item.imageData.description ? `Generated: ${item.imageData.description}` : 'AI Generated Image'}" style="max-width: 100%; height: auto; border-radius: 6px; cursor: pointer;" onclick="educationAssistant.showImageModal('${item.imageUrl}', ${item.imageData ? JSON.stringify(item.imageData).replace(/"/g, '&quot;') : 'null'})">`;
+                
+                imageDiv.innerHTML = imageHTML;
                 itemDiv.appendChild(imageDiv);
             }
             
@@ -800,11 +874,24 @@ class EducationAssistantUI {
             // Add image if present
             if (item.imageUrl) {
                 const imageDiv = document.createElement('div');
-                imageDiv.innerHTML = `
+                let imageHTML = '';
+                
+                // Add image description if available
+                if (item.imageData && item.imageData.description) {
+                    imageHTML += `
+                        <div style="margin-top: 15px; text-align: center; font-size: 14px; color: #666; font-style: italic; margin-bottom: 8px;">
+                            <strong>Generated Image:</strong> ${item.imageData.description}
+                        </div>
+                    `;
+                }
+                
+                imageHTML += `
                     <div style="margin-top: 15px; text-align: center;">
-                        <img src="${item.imageUrl}" style="max-width: 100%; height: auto; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" alt="AI Generated Image">
+                        <img src="${item.imageUrl}" style="max-width: 100%; height: auto; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" alt="${item.imageData && item.imageData.description ? `Generated: ${item.imageData.description}` : 'AI Generated Image'}">
                     </div>
                 `;
+                
+                imageDiv.innerHTML = imageHTML;
                 itemDiv.appendChild(imageDiv);
             }
             
@@ -1412,7 +1499,23 @@ class EducationAssistantUI {
             }
             
             this.persistentLog('Backend response parsed successfully');
-            this.persistentLog(`Response data: ${JSON.stringify(data)}`);
+            this.persistentLog(`Response data keys: ${Object.keys(data)}`);
+            
+            // Log the complete response in a more readable format
+            console.log('📥 COMPLETE BACKEND RESPONSE:');
+            console.log('Text:', data.text ? data.text.substring(0, 100) + '...' : 'No text');
+            console.log('HTML:', data.html ? 'Present' : 'Not present');
+            console.log('Generated Image:', data.generated_image);
+            
+            if (data.generated_image) {
+                console.log('🎨 IMAGE URL:', data.generated_image.image_url);
+                console.log('🎨 IMAGE DESCRIPTION:', data.generated_image.description);
+                this.persistentLog(`🎨 GENERATED IMAGE FOUND: ${data.generated_image.image_url}`);
+            } else {
+                this.persistentLog('❌ No generated_image field in response');
+                console.log('Available fields:', Object.keys(data));
+            }
+            
             this.persistentLog('=== BACKEND REQUEST END ===');
             return data;
             
@@ -1430,7 +1533,9 @@ class EducationAssistantUI {
     }
 
     handleBackendResponse(response, originalQuestion) {
-        console.log('Handling backend response:', response);
+        console.log('🔍 handleBackendResponse called with:', response);
+        console.log('🔍 Response type:', typeof response);
+        console.log('🔍 Response keys:', Object.keys(response));
         
         if (response.error) {
             console.error('Backend returned error:', response.error);
@@ -1441,12 +1546,61 @@ class EducationAssistantUI {
 
         if (response.text) {
             console.log('Adding text response:', response.text);
+            console.log('Full response object:', response);
+            
+            // Check if there's an image generation happening
+            if (response.generated_image) {
+                console.log('🎨 Image generation detected in response!');
+                console.log('🎨 Image data:', response.generated_image);
+            } else {
+                console.log('❌ No generated_image in response');
+            }
+            
             // Use HTML version if available, otherwise fall back to text
             const content = response.html || response.text;
             const isHtml = !!response.html;
             // Store both HTML and plain text for canvas functionality
             const plainText = response.text;
-            this.addMessage(content, 'bot', null, response.image_url || null, originalQuestion, isHtml, plainText);
+            
+            // Check for generated image in the new format
+            let imageUrl = null;
+            let imageData = null;
+            if (response.generated_image && response.generated_image.image_url) {
+                // Prefer local URL if available, fall back to DALL-E URL
+                imageUrl = response.generated_image.local_url || response.generated_image.image_url;
+                imageData = response.generated_image;
+                console.log('✅ Generated image detected:', imageData);
+                console.log('✅ Image URL (preferring local):', imageUrl);
+                
+                if (response.generated_image.local_url) {
+                    console.log('🏠 Using local image URL:', response.generated_image.local_url);
+                    this.persistentLog(`🏠 USING LOCAL IMAGE: ${response.generated_image.local_url}`);
+                } else {
+                    console.log('🌐 Using DALL-E URL (no local copy):', response.generated_image.image_url);
+                    this.persistentLog(`🌐 USING DALLE URL: ${response.generated_image.image_url}`);
+                }
+            } else if (response.image_url) {
+                // Fallback to old format
+                imageUrl = response.image_url;
+                console.log('✅ Old format image URL detected:', imageUrl);
+            } else {
+                console.log('❌ No image found in response');
+                console.log('Response keys:', Object.keys(response));
+            }
+            
+            console.log('Final imageUrl for addMessage:', imageUrl);
+            console.log('Final imageData for addMessage:', imageData);
+            
+            // Add visual indicator if image should be displayed
+            if (imageUrl) {
+                console.log('🖼️ IMAGE SHOULD BE DISPLAYED!', imageUrl);
+                // Add temporary notification
+                this.showNotification(`Image detected: ${imageUrl.substring(0, 50)}...`, 'info');
+            } else {
+                console.log('❌ NO IMAGE TO DISPLAY');
+            }
+            
+            this.addMessage(content, 'bot', null, imageUrl, originalQuestion, isHtml, plainText, imageData);
         }
         
         console.log('Files after response:', this.uploadedFilesList.length);
@@ -1515,6 +1669,158 @@ class EducationAssistantUI {
     getCurrentTime() {
         return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
+
+    // Test function to manually add an image for debugging
+    testImageDisplay() {
+        console.log('🧪 Testing image display with sample URL');
+        this.persistentLog('🧪 STARTING IMAGE DISPLAY TEST');
+        
+        // Test 1: Test with the actual DALL-E URL from your backend logs
+        const realDalleUrl = 'https://oaidalleapiprodscus.blob.core.windows.net/private/org-l5eoLjLValKhw93g09kR0diL/user-zbc1oFhed1GNmTlG9QuYqZft/img-z8g2EREKXb64uC0baviXGrFh.png?st=2025-08-12T17%3A49%3A45Z&se=2025-08-12T19%3A49%3A45Z&sp=r&sv=2024-08-04&sr=b&rscd=inline&rsct=image/png&skoid=7aed557a-269d-4dda-ab8b-c66e34024151&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2025-08-12T10%3A01%3A13Z&ske=2025-08-13T10%3A01%3A13Z&sks=b&skv=2024-08-04&sig=Wk4f%2BlOk1RxJUHfT/5vY141t8nRLN4qmSL1dlDF6y6M%3D';
+        const realDalleData = {
+            image_url: realDalleUrl,
+            description: 'a cat',
+            enhanced_prompt: 'Educational illustration for Class 6 students: a cat. Make it colorful, clear, and age-appropriate for learning.'
+        };
+        
+        console.log('🧪 Testing with real DALL-E URL:', realDalleUrl);
+        this.persistentLog(`🧪 REAL DALLE URL: ${realDalleUrl}`);
+        
+        // Test direct image loading first
+        const testImg = new Image();
+        testImg.onload = () => {
+            console.log('✅ Direct image load: SUCCESS');
+            this.persistentLog('✅ DIRECT IMAGE LOAD: SUCCESS');
+            this.showNotification('DALL-E image loads directly!', 'success');
+        };
+        testImg.onerror = (error) => {
+            console.error('❌ Direct image load: FAILED', error);
+            this.persistentLog('❌ DIRECT IMAGE LOAD: FAILED');
+            this.showNotification('DALL-E image failed to load directly', 'error');
+        };
+        testImg.src = realDalleUrl;
+        
+        // Test 1: Add the real DALL-E image to chat
+        this.addMessage('Test 1: Here is the actual DALL-E generated cat image from your backend logs.', 'bot', null, realDalleUrl, 'Real DALL-E cat', false, null, realDalleData);
+        
+        // Test 2: Simple placeholder image as fallback
+        const testImageUrl = 'https://via.placeholder.com/300x200/4CAF50/white?text=Test+Image';
+        const testImageData = {
+            description: 'Test image for debugging',
+            enhanced_prompt: 'A test image to verify display functionality'
+        };
+        
+        this.addMessage('Test 2: Here is a simple placeholder image to verify the display functionality works correctly.', 'bot', null, testImageUrl, 'Test image display', false, null, testImageData);
+        
+        // Test 3: Simulate backend response format with real DALL-E data
+        setTimeout(() => {
+            const mockBackendResponse = {
+                text: "I've generated an educational image for you using DALL-E!",
+                html: "<p>I've generated an educational image for you using DALL-E!</p>",
+                generated_image: realDalleData
+            };
+            
+            console.log('🧪 Testing with mock backend response containing real DALL-E URL:', mockBackendResponse);
+            this.persistentLog('🧪 TESTING MOCK BACKEND RESPONSE WITH REAL DALLE');
+            this.handleBackendResponse(mockBackendResponse, 'Generate an image of a cat for education');
+        }, 3000);
+        
+        this.persistentLog('🧪 IMAGE DISPLAY TEST SETUP COMPLETED');
+    }
+
+    showImageModal(imageUrl, imageData = null) {
+        // Create modal overlay
+        const modal = document.createElement('div');
+        modal.className = 'image-modal';
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            cursor: pointer;
+        `;
+
+        // Create content container
+        const content = document.createElement('div');
+        content.style.cssText = `
+            max-width: 90vw;
+            max-height: 90vh;
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        `;
+        content.addEventListener('click', (e) => e.stopPropagation());
+
+        // Add image
+        const img = document.createElement('img');
+        img.src = imageUrl;
+        img.style.cssText = `
+            max-width: 100%;
+            max-height: 70vh;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        `;
+
+        // Add description if available
+        if (imageData && imageData.description) {
+            const description = document.createElement('div');
+            description.innerHTML = `<strong>Generated Image:</strong> ${imageData.description}`;
+            description.style.cssText = `
+                font-size: 1.1em;
+                color: #333;
+                margin-bottom: 15px;
+                font-weight: 500;
+            `;
+            content.appendChild(description);
+        }
+
+        content.appendChild(img);
+
+        // Add close button
+        const closeBtn = document.createElement('button');
+        closeBtn.innerHTML = '✕ Close';
+        closeBtn.style.cssText = `
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 10px;
+        `;
+        closeBtn.addEventListener('click', () => {
+            document.body.removeChild(modal);
+        });
+
+        content.appendChild(closeBtn);
+        modal.appendChild(content);
+
+        // Close on overlay click
+        modal.addEventListener('click', () => {
+            document.body.removeChild(modal);
+        });
+
+        // Close on escape key
+        const escapeHandler = (e) => {
+            if (e.key === 'Escape') {
+                document.body.removeChild(modal);
+                document.removeEventListener('keydown', escapeHandler);
+            }
+        };
+        document.addEventListener('keydown', escapeHandler);
+
+        document.body.appendChild(modal);
+    }
 }
 
 // Initialize the application
@@ -1522,6 +1828,20 @@ let educationAssistant;
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM loaded, initializing Education Assistant');
     educationAssistant = new EducationAssistantUI();
+    
+    // Add test functionality for debugging images
+    console.log('Adding test image functionality...');
+    setTimeout(() => {
+        // Add a test button to the interface for debugging
+        const testBtn = document.createElement('button');
+        testBtn.innerHTML = '🧪 Test Image Display';
+        testBtn.style.cssText = 'position: fixed; top: 10px; right: 200px; z-index: 1000; background: #ff6b6b; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;';
+        testBtn.onclick = () => {
+            console.log('🧪 Test button clicked');
+            educationAssistant.testImageDisplay();
+        };
+        document.body.appendChild(testBtn);
+    }, 1000);
     
     // Add global error handling
     window.addEventListener('error', (e) => {
