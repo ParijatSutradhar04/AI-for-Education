@@ -23,6 +23,7 @@ from io import BytesIO
 from PIL import Image
 import logging
 from dotenv import load_dotenv
+import markdown
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -124,14 +125,14 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def pdf_page_to_image(pdf_path, page_num, dpi=150):
-    """Convert a specific PDF page to image"""
+    """Convert a specific PDF page to high-quality image preserving all content"""
     try:
         doc = fitz.open(pdf_path)
         if page_num < 0 or page_num >= len(doc):
             page_num = 0  # Default to first page if invalid
         
         page = doc[page_num]
-        # Convert to image with specified DPI
+        # Convert to image with specified DPI for good quality
         mat = fitz.Matrix(dpi/72, dpi/72)  # 72 is default DPI
         pix = page.get_pixmap(matrix=mat)
         
@@ -145,8 +146,19 @@ def pdf_page_to_image(pdf_path, page_num, dpi=150):
         logger.error(f"Error converting PDF page to image: {str(e)}")
         return None
 
+def image_to_base64(image):
+    """Convert PIL Image to base64 string for OpenAI API"""
+    try:
+        buffer = BytesIO()
+        image.save(buffer, format='PNG')
+        img_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
+        return img_base64
+    except Exception as e:
+        logger.error(f"Error converting image to base64: {str(e)}")
+        return None
+
 def create_context_pdf(pdf_path, current_page, context_pages=2):
-    """Create a smaller PDF with current page and surrounding pages"""
+    """Create a smaller PDF with current page and surrounding pages (kept for potential future use)"""
     try:
         doc = fitz.open(pdf_path)
         total_pages = len(doc)
@@ -172,17 +184,6 @@ def create_context_pdf(pdf_path, current_page, context_pages=2):
     except Exception as e:
         logger.error(f"Error creating context PDF: {str(e)}")
         return None, None, None
-
-def image_to_base64(image):
-    """Convert PIL Image to base64 string"""
-    try:
-        buffer = BytesIO()
-        image.save(buffer, format='PNG')
-        img_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
-        return img_base64
-    except Exception as e:
-        logger.error(f"Error converting image to base64: {str(e)}")
-        return None
 
 def build_education_prompt(message, education_context, file_context=None):
     """Build a comprehensive prompt for the AI with education context"""
@@ -228,9 +229,9 @@ RESPONSE FORMAT:
 PDF CONTEXT:
 - Currently viewing page {current_page} of {total_pages}
 - Document: {file_info.get('original_name', 'Unknown')}
-- The attached image shows the current page content
+- The attached image shows the complete content of the current page (including text, images, diagrams, and formatting)
 
-Please reference the PDF content in your response and explain how to use this material effectively in a Class {class_level} classroom with {class_strength} students.
+Please reference the PDF page content shown in the image and explain how to use this material effectively in a Class {class_level} classroom with {class_strength} students. Consider all visual elements, text, images, and layout when providing your response.
 """
 
     # User message with context
@@ -272,7 +273,7 @@ async def call_openai_api(messages, image_base64=None):
                         "type": "image_url",
                         "image_url": {
                             "url": f"data:image/png;base64,{image_base64}",
-                            "detail": "high"
+                            "detail": "high"  # High detail to capture all content including text and images
                         }
                     }
                 ]
@@ -283,16 +284,17 @@ async def call_openai_api(messages, image_base64=None):
                 "content": messages['user']
             })
         
-        # Make API call
+        # Make API call with vision model for image processing
         response = client.chat.completions.create(
-            model="gpt-4o",  # Use GPT-4 with vision capabilities
+            model="gpt-4o",  # GPT-4 with vision capabilities for image analysis
             messages=api_messages,
             max_tokens=1500,
             temperature=0.7
         )
         
         return {
-            "text": response.choices[0].message.content
+            "text": response.choices[0].message.content,
+            "html": markdown.markdown(response.choices[0].message.content, extensions=['nl2br', 'codehilite'])
         }
         
     except Exception as e:
@@ -335,7 +337,7 @@ def home():
     <h2>AI Features:</h2>
     <ul>
         <li>✅ OpenAI GPT-4 with vision capabilities</li>
-        <li>✅ PDF page context processing</li>
+        <li>✅ PDF page image conversion (preserves all content including images)</li>
         <li>✅ Educational content generation</li>
         <li>✅ Multi-language teaching support</li>
         <li>✅ Class-specific lesson planning</li>
@@ -353,8 +355,8 @@ def home():
     <h2>How It Works:</h2>
     <ul>
         <li>📝 Receives teacher questions with education context</li>
-        <li>📄 Processes PDF files and extracts current page as image</li>
-        <li>🤖 Sends context + image to GPT-4 for educational analysis</li>
+        <li>📄 Converts PDF pages to high-quality images (preserving all visual content)</li>
+        <li>🤖 Sends context + image to GPT-4 vision model for comprehensive analysis</li>
         <li>🎯 Returns classroom-ready teaching suggestions</li>
     </ul>
     """
@@ -365,6 +367,8 @@ def status():
     return jsonify({
         "status": "running",
         "ai_configured": bool(OPENAI_API_KEY and OPENAI_API_KEY != 'your_openai_api_key_here'),
+        "ai_provider": "OpenAI",
+        "model": "gpt-4o",
         "timestamp": datetime.now().isoformat(),
         "endpoints": ["/api/chat", "/api/status", "/api/test"]
     })
@@ -375,6 +379,7 @@ def test():
     return jsonify({
         "message": "AI Education Assistant Backend is running!",
         "ai_status": "configured" if (OPENAI_API_KEY and OPENAI_API_KEY != 'your_openai_api_key_here') else "not_configured",
+        "ai_provider": "OpenAI",
         "timestamp": datetime.now().isoformat()
     })
 
@@ -463,9 +468,9 @@ def chat():
         
         if current_pdf_path and os.path.exists(current_pdf_path):
             try:
-                # Convert current page to image
+                # Convert current page to high-quality image to preserve all content
                 current_page_index = education_context['current_page'] - 1  # Convert to 0-based index
-                page_image = pdf_page_to_image(current_pdf_path, current_page_index)
+                page_image = pdf_page_to_image(current_pdf_path, current_page_index, dpi=200)  # Higher DPI for better quality
                 
                 if page_image:
                     image_base64 = image_to_base64(page_image)
@@ -474,12 +479,12 @@ def chat():
                         'page': education_context['current_page'],
                         'total_pages': education_context['total_pages']
                     }
-                    logger.info(f"✅ Extracted page {education_context['current_page']} as image for AI context")
+                    logger.info(f"✅ Converted page {education_context['current_page']} to high-quality image for AI analysis")
                 else:
-                    logger.warning(f"⚠️  Failed to extract page {education_context['current_page']} as image")
+                    logger.warning(f"⚠️  Failed to convert page {education_context['current_page']} to image")
                     
             except Exception as e:
-                logger.error(f"Error processing PDF context: {str(e)}")
+                logger.error(f"Error processing PDF page: {str(e)}")
         
         # Build prompt with education context
         system_prompt, user_prompt = build_education_prompt(message, education_context, file_context)
@@ -492,7 +497,7 @@ def chat():
         
         logger.info("🤖 Sending request to OpenAI API...")
         
-        # Call OpenAI API
+        # Call OpenAI API with image context
         import asyncio
         response = asyncio.run(call_openai_api(messages, image_base64))
         
@@ -570,19 +575,19 @@ if __name__ == '__main__':
     print("   GET  http://localhost:5000/api/status")
     print("   GET  http://localhost:5000/api/test")
     print("\n🎯 AI Features:")
-    print("   ✅ Real ChatGPT integration")
-    print("   ✅ PDF page image extraction")
-    print("   ✅ Educational context processing")
+    print("   ✅ Real ChatGPT integration with vision")
+    print("   ✅ PDF page to image conversion")
+    print("   ✅ Educational content generation")
     print("   ✅ Multi-language teaching support")
     print("   ✅ Class-specific responses")
     print("   ✅ Automatic file cleanup")
     print("\n📊 Backend processes:")
     print("   📝 Teacher questions + education context")
-    print("   📄 PDF files → current page images")
+    print("   📄 PDF pages → high-quality images")
     print("   🤖 AI analysis with visual context")
     print("   🎯 Classroom-ready teaching suggestions")
     print("\n💡 Required packages:")
-    print("   pip install openai PyMuPDF Pillow")
+    print("   pip install openai PyMuPDF Pillow python-dotenv")
     print("\n" + "="*60)
     
     try:
