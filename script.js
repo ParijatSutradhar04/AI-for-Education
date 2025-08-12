@@ -1558,6 +1558,16 @@ document.addEventListener('DOMContentLoaded', () => {
             educationAssistant.persistentLog(`Debug button clicked: ${e.target.id || e.target.innerHTML}`);
             return; // Allow debug button clicks
         }
+
+        // Allow PDF navigation and zoom buttons to work
+        if (e.target.id === 'prevPage' || 
+            e.target.id === 'nextPage' || 
+            e.target.id === 'zoomIn' || 
+            e.target.id === 'zoomOut' || 
+            e.target.id === 'fitToWidth') {
+            educationAssistant.persistentLog(`PDF control button clicked: ${e.target.id}`);
+            return; // Allow PDF control button clicks
+        }
         
         // Allow "Add to Notes" buttons to work
         if (e.target.classList.contains('add-to-canvas-btn') || 
