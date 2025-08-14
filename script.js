@@ -1671,63 +1671,6 @@ class EducationAssistantUI {
     }
 
     // Test function to manually add an image for debugging
-    testImageDisplay() {
-        console.log('🧪 Testing image display with sample URL');
-        this.persistentLog('🧪 STARTING IMAGE DISPLAY TEST');
-        
-        // Test 1: Test with the actual DALL-E URL from your backend logs
-        const realDalleUrl = 'https://oaidalleapiprodscus.blob.core.windows.net/private/org-l5eoLjLValKhw93g09kR0diL/user-zbc1oFhed1GNmTlG9QuYqZft/img-z8g2EREKXb64uC0baviXGrFh.png?st=2025-08-12T17%3A49%3A45Z&se=2025-08-12T19%3A49%3A45Z&sp=r&sv=2024-08-04&sr=b&rscd=inline&rsct=image/png&skoid=7aed557a-269d-4dda-ab8b-c66e34024151&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2025-08-12T10%3A01%3A13Z&ske=2025-08-13T10%3A01%3A13Z&sks=b&skv=2024-08-04&sig=Wk4f%2BlOk1RxJUHfT/5vY141t8nRLN4qmSL1dlDF6y6M%3D';
-        const realDalleData = {
-            image_url: realDalleUrl,
-            description: 'a cat',
-            enhanced_prompt: 'Educational illustration for Class 6 students: a cat. Make it colorful, clear, and age-appropriate for learning.'
-        };
-        
-        console.log('🧪 Testing with real DALL-E URL:', realDalleUrl);
-        this.persistentLog(`🧪 REAL DALLE URL: ${realDalleUrl}`);
-        
-        // Test direct image loading first
-        const testImg = new Image();
-        testImg.onload = () => {
-            console.log('✅ Direct image load: SUCCESS');
-            this.persistentLog('✅ DIRECT IMAGE LOAD: SUCCESS');
-            this.showNotification('DALL-E image loads directly!', 'success');
-        };
-        testImg.onerror = (error) => {
-            console.error('❌ Direct image load: FAILED', error);
-            this.persistentLog('❌ DIRECT IMAGE LOAD: FAILED');
-            this.showNotification('DALL-E image failed to load directly', 'error');
-        };
-        testImg.src = realDalleUrl;
-        
-        // Test 1: Add the real DALL-E image to chat
-        this.addMessage('Test 1: Here is the actual DALL-E generated cat image from your backend logs.', 'bot', null, realDalleUrl, 'Real DALL-E cat', false, null, realDalleData);
-        
-        // Test 2: Simple placeholder image as fallback
-        const testImageUrl = 'https://via.placeholder.com/300x200/4CAF50/white?text=Test+Image';
-        const testImageData = {
-            description: 'Test image for debugging',
-            enhanced_prompt: 'A test image to verify display functionality'
-        };
-        
-        this.addMessage('Test 2: Here is a simple placeholder image to verify the display functionality works correctly.', 'bot', null, testImageUrl, 'Test image display', false, null, testImageData);
-        
-        // Test 3: Simulate backend response format with real DALL-E data
-        setTimeout(() => {
-            const mockBackendResponse = {
-                text: "I've generated an educational image for you using DALL-E!",
-                html: "<p>I've generated an educational image for you using DALL-E!</p>",
-                generated_image: realDalleData
-            };
-            
-            console.log('🧪 Testing with mock backend response containing real DALL-E URL:', mockBackendResponse);
-            this.persistentLog('🧪 TESTING MOCK BACKEND RESPONSE WITH REAL DALLE');
-            this.handleBackendResponse(mockBackendResponse, 'Generate an image of a cat for education');
-        }, 3000);
-        
-        this.persistentLog('🧪 IMAGE DISPLAY TEST SETUP COMPLETED');
-    }
-
     showImageModal(imageUrl, imageData = null) {
         // Create modal overlay
         const modal = document.createElement('div');
@@ -1828,20 +1771,6 @@ let educationAssistant;
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM loaded, initializing Education Assistant');
     educationAssistant = new EducationAssistantUI();
-    
-    // Add test functionality for debugging images
-    console.log('Adding test image functionality...');
-    setTimeout(() => {
-        // Add a test button to the interface for debugging
-        const testBtn = document.createElement('button');
-        testBtn.innerHTML = '🧪 Test Image Display';
-        testBtn.style.cssText = 'position: fixed; top: 10px; right: 200px; z-index: 1000; background: #ff6b6b; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;';
-        testBtn.onclick = () => {
-            console.log('🧪 Test button clicked');
-            educationAssistant.testImageDisplay();
-        };
-        document.body.appendChild(testBtn);
-    }, 1000);
     
     // Add global error handling
     window.addEventListener('error', (e) => {
