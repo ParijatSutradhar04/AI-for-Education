@@ -98,8 +98,8 @@ def log_request(message, files_info=None, education_context=None):
             print(f"  {key}: {value}")
     print(f"{'='*60}\n")
 
-def generate_sample_responses(message, file_count=0, education_context=None):
-    """Generate different types of sample responses based on message content and education context"""
+def generate_structured_responses(message, file_count=0, education_context=None):
+    """Generate structured JSON responses for the new frontend format"""
     
     # Extract education context for personalized responses
     teacher_lang = education_context.get('teacher_language', 'english') if education_context else 'english'
@@ -109,65 +109,142 @@ def generate_sample_responses(message, file_count=0, education_context=None):
     current_page = education_context.get('current_page', 1) if education_context else 1
     total_pages = education_context.get('total_pages', 1) if education_context else 1
     
-    # Enhanced text responses with education context
-    text_responses = [
-        f"I've analyzed your message: '{message}' for Class {class_level} students ({class_strength} students). Based on page {current_page} of {total_pages} from the {file_count} document(s), here's my educational analysis...",
-        f"For your Class {class_level} lesson planning, considering {class_strength} students and your question '{message}': The content on page {current_page} suggests these teaching strategies...",
-        f"Educational Insight: Your query '{message}' has been processed for Class {class_level}. From page {current_page} of the uploaded materials, I recommend these classroom activities for {class_strength} students...",
-        f"Teaching Recommendation: Based on '{message}' and page {current_page} content, here's how to adapt this for Class {class_level} with {class_strength} students...",
-        f"Curriculum Analysis: For Class {class_level} students, your question '{message}' relates to page {current_page}. Here are {class_strength}-student-friendly explanations..."
-    ]
-    
-    # Language-specific responses
-    if teacher_lang != 'english' or student_lang != 'english':
-        text_responses.extend([
-            f"Multi-language Support: I can help explain this concept in {student_lang} for your students while we discuss in {teacher_lang}.",
-            f"Language Bridge: Since you teach in {teacher_lang} and students learn in {student_lang}, here's a bilingual approach to '{message}'...",
-            f"Cultural Context: Adapting '{message}' for {student_lang}-speaking Class {class_level} students with {teacher_lang} instruction..."
-        ])
-    
     # Sample educational images
     sample_images = [
-        "https://picsum.photos/id/1/200/300",
-        "https://picsum.photos/id/2/200/300",
-        "https://picsum.photos/id/3/200/300",
-        "https://picsum.photos/id/4/200/300",
-        "https://picsum.photos/id/5/200/300"
+        "https://picsum.photos/id/1/300/200",
+        "https://picsum.photos/id/2/300/200", 
+        "https://picsum.photos/id/3/300/200",
+        "https://picsum.photos/id/4/300/200",
+        "https://picsum.photos/id/5/300/200"
     ]
     
     # Determine response type based on message content
     message_lower = message.lower()
     
-    if 'image' in message_lower or 'generate' in message_lower or 'chart' in message_lower or 'visual' in message_lower:
-        # Return text + image response
-        return {
-            "text": random.choice(text_responses),
-            "image_url": random.choice(sample_images)
-        }
-    
-    elif 'error' in message_lower or 'fail' in message_lower:
+    if 'error' in message_lower or 'fail' in message_lower:
         # Return error response for testing
         return {
             "error": "Simulated error for testing purposes"
         }
     
     elif 'lesson' in message_lower or 'teach' in message_lower or 'classroom' in message_lower:
-        # Return education-focused response
+        # Return lesson planning structured response
         return {
-            "text": f"🎓 Lesson Planning Suggestion: For Class {class_level} with {class_strength} students, here's how to teach '{message}' using page {current_page} content. Consider interactive activities, group work, and differentiated instruction based on the material provided."
+            "structured_content": [
+                {
+                    "heading": "📚 Lesson Overview",
+                    "text": f"This lesson is designed for Class {class_level} students ({class_strength} total) based on your query: '{message}'. The content draws from page {current_page} of {total_pages} from the uploaded materials.",
+                    "id": "lesson_overview"
+                },
+                {
+                    "heading": "🎯 Learning Objectives",
+                    "text": f"By the end of this lesson, students will be able to understand the key concepts presented and apply them in practical scenarios. The objectives are tailored for {class_strength} students working collaboratively.",
+                    "id": "learning_objectives"
+                },
+                {
+                    "heading": "📖 Content Breakdown",
+                    "text": f"The main content from page {current_page} has been analyzed and broken down into digestible segments suitable for Class {class_level} comprehension level.",
+                    "id": "content_breakdown"
+                },
+                {
+                    "heading": "🎓 Teaching Strategies", 
+                    "text": f"Interactive activities and group work recommendations for {class_strength} students, including differentiated instruction techniques and assessment methods.",
+                    "id": "teaching_strategies"
+                },
+                {
+                    "heading": "💡 Additional Resources",
+                    "text": "Supplementary materials and follow-up activities to reinforce learning and provide extended practice opportunities.",
+                    "id": "additional_resources"
+                }
+            ]
         }
     
     elif 'language' in message_lower or student_lang != 'english' or teacher_lang != 'english':
-        # Return multilingual support response
+        # Return multilingual support structured response
         return {
-            "text": f"🌐 Multilingual Support: I can help bridge the language gap between {teacher_lang} (teacher) and {student_lang} (students) for this Class {class_level} topic. The content on page {current_page} can be adapted for bilingual instruction."
+            "structured_content": [
+                {
+                    "heading": "🌐 Language Bridge",
+                    "text": f"Bridging communication between {teacher_lang} (teacher) and {student_lang} (student) for Class {class_level} topics.",
+                    "id": "language_bridge"
+                },
+                {
+                    "heading": "📝 Key Vocabulary",
+                    "text": f"Essential terms and concepts translated and explained in both {teacher_lang} and {student_lang} for better comprehension.",
+                    "id": "key_vocabulary"
+                },
+                {
+                    "heading": "🗣️ Cultural Context",
+                    "text": f"Adapting the content for {student_lang}-speaking students while maintaining educational effectiveness.",
+                    "id": "cultural_context"
+                },
+                {
+                    "heading": "💬 Communication Tips",
+                    "text": f"Strategies for effective multilingual instruction with {class_strength} diverse learners.",
+                    "id": "communication_tips"
+                }
+            ]
+        }
+    
+    elif 'image' in message_lower or 'generate' in message_lower or 'chart' in message_lower or 'visual' in message_lower:
+        # Return structured response with visual aid
+        return {
+            "structured_content": [
+                {
+                    "heading": "🎨 Visual Learning Aid",
+                    "text": f"A visual representation has been generated to support your teaching of '{message}' for Class {class_level} students.",
+                    "id": "visual_aid"
+                },
+                {
+                    "heading": "📊 Content Analysis",
+                    "text": f"Analysis of the visual elements and how they relate to the learning objectives for {class_strength} students.",
+                    "id": "content_analysis"
+                },
+                {
+                    "heading": "🔍 Usage Guidelines",
+                    "text": f"Best practices for incorporating this visual aid into your Class {class_level} lesson plan.",
+                    "id": "usage_guidelines"
+                }
+            ],
+            "image_url": random.choice(sample_images)
         }
     
     else:
-        # Return text-only response
+        # Return general educational analysis structured response
         return {
-            "text": random.choice(text_responses)
+            "structured_content": [
+                {
+                    "heading": "🔍 Educational Analysis",
+                    "text": f"Analysis of your message '{message}' for Class {class_level} students ({class_strength} total). Based on page {current_page} of {total_pages} from uploaded documents.",
+                    "id": "educational_analysis"
+                },
+                {
+                    "heading": "📚 Content Summary", 
+                    "text": f"Key points extracted from page {current_page} that are relevant to your query and suitable for Class {class_level} comprehension level.",
+                    "id": "content_summary"
+                },
+                {
+                    "heading": "🎯 Recommended Activities",
+                    "text": f"Suggested classroom activities for {class_strength} students to reinforce the concepts and promote active learning.",
+                    "id": "recommended_activities"
+                },
+                {
+                    "heading": "📋 Assessment Ideas",
+                    "text": f"Evaluation strategies and assessment methods appropriate for Class {class_level} students to measure understanding.",
+                    "id": "assessment_ideas"
+                },
+                {
+                    "heading": "🌟 Enhancement Opportunities",
+                    "text": f"Ways to extend and enrich the learning experience beyond the basic curriculum requirements.",
+                    "id": "enhancement_opportunities"
+                }
+            ]
         }
+
+# Keep the old function for backward compatibility during transition
+def generate_sample_responses(message, file_count=0, education_context=None):
+    """Legacy function - redirects to new structured response format"""
+    return generate_structured_responses(message, file_count, education_context)
 
 @app.route('/')
 def home():
@@ -298,7 +375,7 @@ def chat():
         time.sleep(processing_delay)
         
         # Generate response based on message content and education context
-        response = generate_sample_responses(message, len(uploaded_files), education_context)
+        response = generate_structured_responses(message, len(uploaded_files), education_context)
         
         # Ensure proper JSON response with correct headers
         json_response = jsonify(response)
@@ -313,6 +390,119 @@ def chat():
         error_msg = f"Server error: {str(e)}"
         print(f"ERROR: {error_msg}")
         return jsonify({"error": error_msg}), 500
+
+@app.route('/api/chat/follow-up', methods=['POST', 'OPTIONS'])
+def chat_follow_up():
+    """Endpoint for handling follow-up questions on specific content boxes"""
+    # Handle preflight requests
+    if request.method == 'OPTIONS':
+        response = jsonify({'status': 'OK'})
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+        response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+        return response
+    
+    try:
+        # Get JSON data for follow-up requests
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+        
+        message = data.get('message', '').strip()
+        box_id = data.get('box_id', '')
+        box_heading = data.get('box_heading', '')
+        box_text = data.get('box_text', '')
+        
+        if not message or not box_id:
+            return jsonify({"error": "Message and box_id are required"}), 400
+        
+        # Extract education context
+        education_context = data.get('education_context', {})
+        
+        # Log the follow-up request
+        print(f"\n{'='*50}")
+        print(f"FOLLOW-UP REQUEST")
+        print(f"{'='*50}")
+        print(f"Original Box ID: {box_id}")
+        print(f"Original Heading: {box_heading}")
+        print(f"New Question: {message}")
+        print(f"{'='*50}\n")
+        
+        # Simulate processing delay
+        processing_delay = random.uniform(0.3, 1.0)
+        print(f"Processing follow-up request... ({processing_delay:.1f}s)")
+        time.sleep(processing_delay)
+        
+        # Generate contextual response based on the original box content
+        new_text = generate_follow_up_response(message, box_id, box_heading, box_text, education_context)
+        
+        # Return just the updated text for the specific box
+        response = {
+            "updated_text": new_text,
+            "box_id": box_id
+        }
+        
+        json_response = jsonify(response)
+        json_response.headers['Content-Type'] = 'application/json'
+        json_response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        json_response.headers['Pragma'] = 'no-cache'
+        json_response.headers['Expires'] = '0'
+        
+        return json_response
+        
+    except Exception as e:
+        error_msg = f"Server error: {str(e)}"
+        print(f"ERROR: {error_msg}")
+        return jsonify({"error": error_msg}), 500
+
+def generate_follow_up_response(message, box_id, box_heading, box_text, education_context):
+    """Generate follow-up response for a specific content box"""
+    
+    class_level = education_context.get('class_level', '6')
+    class_strength = education_context.get('class_strength', '30')
+    
+    # Generate contextual response based on the box and question
+    follow_up_responses = {
+        "lesson_overview": [
+            f"Building on the lesson overview, here's a deeper dive into '{message}' for your Class {class_level} students: This expands the foundational concepts with more specific examples and practical applications.",
+            f"Regarding '{message}' in the lesson overview context: For {class_strength} students, consider breaking this down into smaller, manageable segments with interactive checkpoints.",
+            f"Your follow-up question '{message}' about the lesson overview suggests we should focus on differentiated approaches for your Class {class_level} students."
+        ],
+        "learning_objectives": [
+            f"Expanding on the learning objectives with your question '{message}': We can create more specific, measurable outcomes for Class {class_level} students.",
+            f"Based on your follow-up '{message}', here are additional learning objectives tailored for {class_strength} students working in collaborative groups.",
+            f"Your question '{message}' about learning objectives helps us refine the expected outcomes and assessment criteria for this lesson."
+        ],
+        "content_breakdown": [
+            f"Diving deeper into the content with your question '{message}': Here's a more detailed analysis suitable for Class {class_level} comprehension level.",
+            f"Your follow-up '{message}' about content breakdown allows us to explore specific aspects with enhanced clarity for {class_strength} students.",
+            f"Building on the content breakdown, '{message}' opens up opportunities for extended learning and deeper exploration."
+        ],
+        "teaching_strategies": [
+            f"Regarding teaching strategies and your question '{message}': Here are additional methods specifically designed for {class_strength} Class {class_level} students.",
+            f"Your follow-up '{message}' about teaching strategies suggests we should explore more interactive and engaging approaches.",
+            f"Building on teaching strategies with '{message}': Consider incorporating technology and collaborative learning techniques."
+        ],
+        "additional_resources": [
+            f"Expanding additional resources based on your question '{message}': Here are supplementary materials that directly address your specific needs.",
+            f"Your follow-up '{message}' about resources helps identify the most relevant and useful materials for Class {class_level}.",
+            f"Regarding '{message}' and additional resources: These enhanced materials will provide better support for diverse learning styles."
+        ]
+    }
+    
+    # Default responses for other box types
+    default_responses = [
+        f"Thank you for your follow-up question '{message}' about {box_heading}. Here's additional insight tailored for your Class {class_level} students with {class_strength} total enrollment.",
+        f"Building on {box_heading}, your question '{message}' allows us to explore this topic more thoroughly with specific applications for your classroom.",
+        f"Your follow-up '{message}' regarding {box_heading} opens up new possibilities for enhanced learning experiences with your {class_strength} students."
+    ]
+    
+    # Select appropriate response based on box_id
+    if box_id in follow_up_responses:
+        return random.choice(follow_up_responses[box_id])
+    else:
+        return random.choice(default_responses)
 
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):

@@ -175,13 +175,24 @@
     </div>
 
     <div class="main-container">
-        <!-- Left Panel - PDF Preview -->
-        <div class="left-panel active" id="pdfPanel">
+        <!-- Left Panel - PDF Preview with Canvas Toggle -->
+        <div class="left-panel active" id="leftPanel">
             <div class="panel-header">
-                <h3><i class="fas fa-file-pdf"></i> PDF Viewer</h3>
+                <h3 id="leftPanelTitle"><i class="fas fa-file-pdf"></i> PDF Viewer</h3>
+                <div class="panel-toggle-controls">
+                    <button id="showPdfBtn" class="toggle-btn active">
+                        <i class="fas fa-file-pdf"></i> PDF
+                    </button>
+                    <button id="showCanvasBtn" class="toggle-btn">
+                        <i class="fas fa-edit"></i> Canvas
+                    </button>
+                    <button id="downloadCanvasBtn" class="download-btn" style="display: none;">
+                        <i class="fas fa-download"></i> Download PDF
+                    </button>
+                </div>
             </div>
             
-            <!-- PDF Preview and Navigation -->
+            <!-- PDF Preview Section -->
             <div class="pdf-preview-section" id="pdfPreviewSection" style="display: none;">
                 <div class="pdf-controls">
                     <select id="pdfSelector" class="pdf-selector">
@@ -210,6 +221,19 @@
                 </div>
             </div>
             
+            <!-- Canvas Section -->
+            <div class="canvas-section" id="canvasSection" style="display: none;">
+                <div class="canvas-container">
+                    <div class="canvas-content" id="canvasContent">
+                        <div class="canvas-placeholder">
+                            <i class="fas fa-edit"></i>
+                            <p>Your AI responses will appear here</p>
+                            <small>Ask questions in the chat to see structured responses you can save</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
             <!-- No PDF Uploaded Message -->
             <div class="no-pdf-message" id="noPdfMessage">
                 <i class="fas fa-file-pdf"></i>
@@ -218,32 +242,8 @@
             </div>
         </div>
 
-        <!-- Middle Panel - Canvas -->
-        <div class="middle-panel" id="notesPanel">
-            <div class="panel-header">
-                <h3><i class="fas fa-edit"></i> Notes & Responses</h3>
-                <button id="downloadCanvasBtn" class="download-btn">
-                    <i class="fas fa-download"></i> Download PDF
-                </button>
-                <!-- Temporary test button -->
-                <!-- <button onclick="educationAssistant.addTestCanvasItem()" style="margin-left: 10px; padding: 8px 12px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                    Add Test Item
-                </button> -->
-            </div>
-            
-            <div class="canvas-container">
-                <div class="canvas-content" id="canvasContent">
-                    <div class="canvas-placeholder">
-                        <i class="fas fa-sticky-note"></i>
-                        <p>AI responses will appear here when you add them</p>
-                        <small>Click "Add to Notes" button next to AI responses in the chat</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Right Panel - Chat Interface -->
-        <div class="right-panel" id="chatPanel">
+        <!-- Right Panel - Expanded Chat Interface -->
+        <div class="right-panel expanded" id="chatPanel">
             <div class="panel-header">
                 <h3><i class="fas fa-comments"></i> AI Assistant</h3>
             </div>
@@ -255,7 +255,14 @@
                         <i class="fas fa-robot"></i>
                     </div>
                     <div class="message-content">
-                        <p>Hello! I'm your AI Education Assistant. Upload PDF documents and ask me questions to help with lesson planning and teaching materials.</p>
+                        <p>👋 Hello! I'm your AI Education Assistant. Upload PDF materials and ask me questions to get structured lesson plans, teaching strategies, and educational insights.</p>
+                        <p><strong>Try these sample questions:</strong></p>
+                        <ul>
+                            <li>💡 "Create a lesson plan for this topic"</li>
+                            <li>🌐 "Help with multilingual instruction"</li>
+                            <li>🎨 "Generate visual aids for this content"</li>
+                            <li>📊 "Suggest assessment strategies"</li>
+                        </ul>
                     </div>
                     <div class="message-time">Just now</div>
                 </div>
@@ -266,7 +273,7 @@
                 <div class="input-container">
                     <textarea 
                         id="messageInput" 
-                        placeholder="Ask me about the uploaded documents..."
+                        placeholder="Ask me about your uploaded materials..."
                         rows="1"
                     ></textarea>
                     <button id="sendButton" type="button" class="send-btn">
@@ -283,13 +290,9 @@
     <!-- Mobile Navigation -->
     <div class="mobile-nav" id="mobileNav">
         <div class="mobile-nav-buttons">
-            <button class="mobile-nav-btn active" data-panel="pdfPanel">
+            <button class="mobile-nav-btn active" data-panel="leftPanel">
                 <i class="fas fa-file-pdf"></i>
-                <span>PDF</span>
-            </button>
-            <button class="mobile-nav-btn" data-panel="notesPanel">
-                <i class="fas fa-edit"></i>
-                <span>Notes</span>
+                <span>PDF/Canvas</span>
             </button>
             <button class="mobile-nav-btn" data-panel="chatPanel">
                 <i class="fas fa-comments"></i>

@@ -118,7 +118,7 @@ body {
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
 }
 
-/* Panel Styles */
+/* Panel Styles - Updated for 2-panel layout */
 .left-panel {
     width: 45%;
     background: white;
@@ -128,21 +128,21 @@ body {
     overflow: hidden;
 }
 
-.middle-panel {
-    width: 28%;
+.right-panel {
+    width: 55%; /* Expanded from previous 27% */
     background: white;
-    border-right: 1px solid #e0e0e0;
     display: flex;
     flex-direction: column;
     overflow: hidden;
 }
 
-.right-panel {
-    width: 27%;
-    background: white;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
+.right-panel.expanded {
+    width: 55%;
+}
+
+/* Remove middle panel styles as it's no longer used */
+.middle-panel {
+    display: none;
 }
 
 .panel-header {
@@ -162,6 +162,36 @@ body {
 
 .panel-header i {
     margin-right: 8px;
+}
+
+/* Panel Toggle Controls */
+.panel-toggle-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.toggle-btn {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 6px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.toggle-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.toggle-btn.active {
+    background: rgba(255, 255, 255, 0.4);
+    border-color: rgba(255, 255, 255, 0.6);
 }
 
 .download-btn {
@@ -349,7 +379,15 @@ body {
     background: white;
 }
 
-/* Middle Panel - Canvas */
+/* Canvas Section - for toggleable canvas in left panel */
+.canvas-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* Middle Panel - Canvas - Keep existing styles for backward compatibility */
 .canvas-container {
     flex: 1;
     overflow-y: auto;
@@ -385,6 +423,184 @@ body {
 .canvas-placeholder small {
     font-size: 14px;
     color: #bbb;
+}
+
+/* Structured Response Boxes */
+.structured-response-container {
+    margin: 20px 0;
+    padding: 0;
+}
+
+.response-box {
+    background: #f8f9ff;
+    border: 1px solid #e3e8ff;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.response-box:hover {
+    border-color: #667eea;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+    transform: translateY(-2px);
+}
+
+.response-box.expanded {
+    border-color: #667eea;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+}
+
+.response-box-header {
+    padding: 15px 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+}
+
+.response-box-title {
+    font-weight: 600;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.response-box-actions {
+    display: flex;
+    gap: 8px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.response-box:hover .response-box-actions {
+    opacity: 1;
+}
+
+.response-box-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 11px;
+    transition: background 0.3s ease;
+}
+
+.response-box-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.response-box-content {
+    padding: 20px;
+    background: white;
+    display: none;
+    color: #333;
+    line-height: 1.6;
+}
+
+.response-box.expanded .response-box-content {
+    display: block;
+}
+
+.response-box-content h1,
+.response-box-content h2,
+.response-box-content h3,
+.response-box-content h4 {
+    color: #333;
+    margin: 15px 0 10px 0;
+}
+
+.response-box-content ul,
+.response-box-content ol {
+    margin: 10px 0;
+    padding-left: 20px;
+}
+
+.response-box-content li {
+    margin: 5px 0;
+}
+
+.response-box-content p {
+    margin: 10px 0;
+}
+
+/* Follow-up input area */
+.response-box-follow-up {
+    padding: 15px 20px;
+    background: #f8f9fa;
+    border-top: 1px solid #e3e8ff;
+    display: none;
+}
+
+.response-box.expanded .response-box-follow-up {
+    display: block;
+}
+
+.follow-up-input-container {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+}
+
+.follow-up-input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    resize: none;
+    font-size: 14px;
+    min-height: 36px;
+}
+
+.follow-up-send-btn {
+    background: #667eea;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 12px;
+    white-space: nowrap;
+    transition: background 0.3s ease;
+}
+
+.follow-up-send-btn:hover {
+    background: #764ba2;
+}
+
+.follow-up-send-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+/* Loading state for response boxes */
+.response-box.loading {
+    opacity: 0.7;
+}
+
+.response-box.loading .response-box-header {
+    background: linear-gradient(135deg, #999 0%, #666 100%);
+}
+
+.loading-spinner-small {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
 }
 
 .canvas-item {
@@ -892,7 +1108,7 @@ body {
     }
     
     /* Hide panels by default on mobile */
-    .left-panel, .middle-panel, .right-panel {
+    .left-panel, .right-panel {
         display: none;
         width: 100%;
         height: 100%;
@@ -900,14 +1116,28 @@ body {
     
     /* Show active panel */
     .left-panel.active,
-    .middle-panel.active, 
     .right-panel.active {
         display: flex;
+    }
+    
+    /* Remove middle panel completely in mobile */
+    .middle-panel {
+        display: none !important;
     }
     
     .panel-header {
         padding: 20px;
         min-height: 70px;
+    }
+    
+    .panel-toggle-controls {
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+    
+    .toggle-btn {
+        padding: 5px 10px;
+        font-size: 11px;
     }
     
     .panel-header h3 {
@@ -1298,4 +1528,69 @@ body {
 @keyframes slideIn {
     from { transform: scale(0.8); opacity: 0; }
     to { transform: scale(1); opacity: 1; }
+}
+
+/* Canvas Structured Sections */
+.canvas-structured-section {
+    margin: 15px 0;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #667eea;
+}
+
+.canvas-structured-section h4 {
+    color: #333;
+    margin: 0 0 10px 0;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.canvas-structured-content {
+    color: #555;
+    line-height: 1.6;
+}
+
+.canvas-structured-content p {
+    margin: 8px 0;
+}
+
+.canvas-structured-content ul,
+.canvas-structured-content ol {
+    margin: 10px 0;
+    padding-left: 20px;
+}
+
+.canvas-structured-content li {
+    margin: 5px 0;
+}
+
+/* Structured Message Styles */
+.structured-message .message-content {
+    max-width: none;
+    width: 100%;
+}
+
+.message-actions {
+    margin-bottom: 15px;
+    text-align: right;
+}
+
+.add-to-canvas-btn {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.add-to-canvas-btn:hover {
+    background: #218838;
+    transform: translateY(-1px);
 }

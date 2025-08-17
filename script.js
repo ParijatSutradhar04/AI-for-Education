@@ -8,8 +8,7 @@ class EducationAssistantUI {
         this.BACKEND_URL = 'http://localhost:5000';
         this.persistentLog(`Backend URL set to: ${this.BACKEND_URL}`);
         
-        this.initializeElements();
-        this.setupEventListeners();
+        // Initialize arrays and properties BEFORE initializing elements
         this.chatHistory = [];
         this.uploadedFilesList = [];
         this.currentPdfData = [];
@@ -21,9 +20,17 @@ class EducationAssistantUI {
         this.minZoom = 0.5;
         this.maxZoom = 3.0;
         this.zoomStep = 0.25;
-        // Set to false to use real backend, true for simulation
-        this.useSimulation = false;
+        // Set to true to use test backend, false for real backend
+        this.useSimulation = true;
         this.sendingMessage = false; // Prevent multiple simultaneous requests
+        
+        // New properties for structured responses
+        this.structuredResponses = [];
+        this.activeResponseBoxes = new Map();
+        
+        // Now initialize elements and event listeners
+        this.initializeElements();
+        this.setupEventListeners();
         
         this.persistentLog('Education Assistant UI initialized successfully');
     }
@@ -81,6 +88,31 @@ class EducationAssistantUI {
         this.messageInput = document.getElementById('messageInput');
         this.sendButton = document.getElementById('sendButton');
         
+        // Debug: Check if critical elements are found
+        if (!this.messageInput) {
+            console.error('❌ Message input not found!');
+            this.persistentLog('Message input not found!', 'error');
+        } else {
+            console.log('✅ Message input found');
+            this.persistentLog('Message input found successfully');
+        }
+        
+        if (!this.sendButton) {
+            console.error('❌ Send button not found!');
+            this.persistentLog('Send button not found!', 'error');
+        } else {
+            console.log('✅ Send button found');
+            this.persistentLog('Send button found successfully');
+        }
+        
+        if (!this.chatMessages) {
+            console.error('❌ Chat messages container not found!');
+            this.persistentLog('Chat messages container not found!', 'error');
+        } else {
+            console.log('✅ Chat messages container found');
+            this.persistentLog('Chat messages container found successfully');
+        }
+        
         // PDF elements
         this.pdfInput = document.getElementById('pdfInput');
         this.uploadArea = document.getElementById('uploadArea');
@@ -103,6 +135,13 @@ class EducationAssistantUI {
         this.canvasContent = document.getElementById('canvasContent');
         this.downloadCanvasBtn = document.getElementById('downloadCanvasBtn');
         
+        // New toggle elements for 2-panel layout
+        this.leftPanel = document.getElementById('leftPanel');
+        this.leftPanelTitle = document.getElementById('leftPanelTitle');
+        this.showPdfBtn = document.getElementById('showPdfBtn');
+        this.showCanvasBtn = document.getElementById('showCanvasBtn');
+        this.canvasSection = document.getElementById('canvasSection');
+        
         // Debug: Check if download button was found
         if (this.downloadCanvasBtn) {
             console.log('Download canvas button found successfully');
@@ -124,12 +163,11 @@ class EducationAssistantUI {
         this.mobileClassLevel = document.getElementById('mobileClassLevel');
         this.mobileClassStrength = document.getElementById('mobileClassStrength');
         
-        // Mobile navigation elements
+        // Mobile navigation elements - updated for 2-panel layout
         this.mobileNav = document.getElementById('mobileNav');
         this.mobileNavBtns = document.querySelectorAll('.mobile-nav-btn');
         this.panels = {
-            pdfPanel: document.getElementById('pdfPanel'),
-            notesPanel: document.getElementById('notesPanel'),
+            leftPanel: document.getElementById('leftPanel'),
             chatPanel: document.getElementById('chatPanel')
         };
         
@@ -145,24 +183,111 @@ class EducationAssistantUI {
         // Initialize mobile navigation
         this.initializeMobileNavigation();
         this.initializeMobileSettings();
+        
+        // Initialize toggle functionality
+        this.initializeToggleFunctionality();
+    }
+
+    // New method to initialize toggle functionality
+    initializeToggleFunctionality() {
+        if (!this.showPdfBtn || !this.showCanvasBtn) {
+            this.persistentLog('Toggle buttons not found, skipping toggle initialization', 'error');
+            return;
+        }
+
+        // PDF/Canvas toggle event listeners
+        this.showPdfBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.showPdfView();
+        });
+
+        this.showCanvasBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.showCanvasView();
+        });
+
+        // Initialize with PDF view by default
+        this.showPdfView();
+        
+        this.persistentLog('Toggle functionality initialized successfully');
+    }
+
+    // Method to show PDF view
+    showPdfView() {
+        if (!this.leftPanelTitle || !this.showPdfBtn || !this.showCanvasBtn) return;
+        
+        // Update title
+        this.leftPanelTitle.innerHTML = '<i class="fas fa-file-pdf"></i> PDF Viewer';
+        
+        // Update button states
+        this.showPdfBtn.classList.add('active');
+        this.showCanvasBtn.classList.remove('active');
+        
+        // Show/hide sections
+        if (this.pdfPreviewSection) this.pdfPreviewSection.style.display = 'flex';
+        if (this.canvasSection) this.canvasSection.style.display = 'none';
+        if (this.noPdfMessage && this.uploadedFilesList && this.uploadedFilesList.length === 0) {
+            this.noPdfMessage.style.display = 'flex';
+        }
+        
+        // Hide download button
+        if (this.downloadCanvasBtn) this.downloadCanvasBtn.style.display = 'none';
+        
+        this.persistentLog('Switched to PDF view');
+    }
+
+    // Method to show canvas view
+    showCanvasView() {
+        if (!this.leftPanelTitle || !this.showPdfBtn || !this.showCanvasBtn) return;
+        
+        // Update title
+        this.leftPanelTitle.innerHTML = '<i class="fas fa-edit"></i> Canvas';
+        
+        // Update button states
+        this.showPdfBtn.classList.remove('active');
+        this.showCanvasBtn.classList.add('active');
+        
+        // Show/hide sections
+        if (this.pdfPreviewSection) this.pdfPreviewSection.style.display = 'none';
+        if (this.canvasSection) this.canvasSection.style.display = 'flex';
+        if (this.noPdfMessage) this.noPdfMessage.style.display = 'none';
+        
+        // Show download button
+        if (this.downloadCanvasBtn) this.downloadCanvasBtn.style.display = 'inline-flex';
+        
+        this.persistentLog('Switched to canvas view');
     }
 
     setupEventListeners() {
     // Chat functionality - simplified and cleaned up event handling
         this.sendButton.addEventListener('click', (e) => {
+            console.log('🖱️ Send button clicked');
             this.persistentLog('Send button clicked');
             // No need to preventDefault since button is type="button"
             // e.preventDefault();
             e.stopPropagation();
-            this.sendMessage();
+            console.log('📞 Calling sendMessage from button click');
+            this.sendMessage().catch(error => {
+                console.error('Error in sendMessage:', error);
+                this.persistentLog(`Error in sendMessage: ${error.message}`, 'error');
+                this.sendingMessage = false;
+                this.hideLoading();
+            });
         });
         
         this.messageInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
+                console.log('⌨️ Enter key pressed in message input');
                 this.persistentLog('Enter key pressed in message input');
                 e.preventDefault();
                 e.stopPropagation();
-                this.sendMessage();
+                console.log('📞 Calling sendMessage from Enter key');
+                this.sendMessage().catch(error => {
+                    console.error('Error in sendMessage:', error);
+                    this.persistentLog(`Error in sendMessage: ${error.message}`, 'error');
+                    this.sendingMessage = false;
+                    this.hideLoading();
+                });
             }
         });
         
@@ -275,6 +400,11 @@ class EducationAssistantUI {
         if (this.panels[panelId]) {
             this.panels[panelId].classList.add('active');
         }
+        
+        // Update mobile navigation button states
+        this.mobileNavBtns.forEach(btn => btn.classList.remove('active'));
+        const activeBtn = document.querySelector(`[data-panel="${panelId}"]`);
+        if (activeBtn) activeBtn.classList.add('active');
         
         this.persistentLog(`Switched to panel: ${panelId}`);
     }
@@ -424,6 +554,22 @@ class EducationAssistantUI {
 
     async sendMessage() {
         try {
+            console.log('🚀 sendMessage called');
+            this.persistentLog('🚀 sendMessage method called');
+            
+            // Check if required elements exist
+            if (!this.messageInput) {
+                console.error('❌ messageInput is null');
+                this.persistentLog('messageInput is null', 'error');
+                return;
+            }
+            
+            if (!this.sendButton) {
+                console.error('❌ sendButton is null');
+                this.persistentLog('sendButton is null', 'error');
+                return;
+            }
+            
             // Prevent multiple simultaneous requests
             if (this.sendingMessage) {
                 this.persistentLog('Message sending already in progress, ignoring duplicate request');
@@ -431,9 +577,15 @@ class EducationAssistantUI {
             }
             
             this.sendingMessage = true;
+            console.log('🔒 Set sendingMessage to true');
             
             const message = this.messageInput.value.trim();
+            console.log('📝 Message content:', message);
+            this.persistentLog(`Message content: "${message}"`);
+            
             if (!message) {
+                console.log('❌ Empty message, aborting');
+                this.persistentLog('Empty message, aborting');
                 this.sendingMessage = false;
                 return;
             }
@@ -443,6 +595,7 @@ class EducationAssistantUI {
             this.persistentLog(`Current files: ${this.uploadedFilesList.length}`);
 
             // Add user message to chat
+            console.log('➕ Adding user message to chat');
             this.addMessage(message, 'user');
             
             // Clear input
@@ -450,13 +603,16 @@ class EducationAssistantUI {
             this.autoResizeTextarea();
 
             // Show loading
+            console.log('⏳ Showing loading overlay');
             this.showLoading();
 
             if (this.useSimulation) {
+                console.log('🎭 Using simulation mode');
                 this.persistentLog('Using simulation mode');
                 this.simulateBackendResponse(message);
                 this.hideLoading();
             } else {
+                console.log('🌐 Using real backend');
                 this.persistentLog('Using real backend');
                 const payload = this.buildPayload(message);
                 this.persistentLog('Payload built successfully');
@@ -471,6 +627,7 @@ class EducationAssistantUI {
             }
             
             this.persistentLog('=== SEND MESSAGE END ===');
+            console.log('🔓 Setting sendingMessage to false');
             this.sendingMessage = false;
             
         } catch (error) {
@@ -524,6 +681,24 @@ class EducationAssistantUI {
         });
 
         return formData;
+    }
+
+    // Get education context for API requests
+    getEducationContext() {
+        const teacherLang = (this.mobileTeacherLanguage?.value) || this.teacherLanguage?.value || 'english';
+        const studentLang = (this.mobileStudentLanguage?.value) || this.studentLanguage?.value || 'english';
+        const classLvl = (this.mobileClassLevel?.value) || this.classLevel?.value || '6';
+        const classStr = (this.mobileClassStrength?.value) || this.classStrength?.value || '30';
+        
+        return {
+            teacher_language: teacherLang,
+            student_language: studentLang,
+            class_level: classLvl,
+            class_strength: classStr,
+            current_page: this.currentPage,
+            total_pages: this.totalPages,
+            current_pdf_index: this.currentPdfIndex
+        };
     }
 
     addMessage(content, sender, timestamp = null, imageUrl = null, originalQuestion = null, isHtml = false, plainText = null, imageData = null) {
@@ -758,9 +933,19 @@ class EducationAssistantUI {
         });
     }
 
-    removeFromCanvas(itemId) {
-        this.canvasItems = this.canvasItems.filter(item => item.id !== itemId);
-        this.renderCanvas();
+    removeFromCanvas(itemIdOrElement) {
+        // Handle both old style (itemId) and new style (DOM element)
+        if (typeof itemIdOrElement === 'string' || typeof itemIdOrElement === 'number') {
+            // Old style - remove from canvasItems array
+            this.canvasItems = this.canvasItems.filter(item => item.id !== itemIdOrElement);
+            this.renderCanvas();
+        } else {
+            // New style - remove DOM element directly
+            const element = itemIdOrElement;
+            if (element && element.parentNode) {
+                element.parentNode.removeChild(element);
+            }
+        }
         this.showNotification('Removed from notes', 'info');
     }
 
@@ -1425,14 +1610,85 @@ class EducationAssistantUI {
 
     // Backend communication methods
     simulateBackendResponse(userMessage) {
+        console.log('🎭 Starting simulation with message:', userMessage);
+        this.persistentLog(`Simulating response for: ${userMessage}`);
+        
         setTimeout(() => {
+            console.log('⏰ Simulation timeout complete');
             this.hideLoading();
             
-            if (userMessage.toLowerCase().includes('image') || userMessage.toLowerCase().includes('generate')) {
-                this.handleImageResponse(userMessage);
+            // Create structured response based on message content
+            let structuredResponse;
+            
+            if (userMessage.toLowerCase().includes('lesson') || userMessage.toLowerCase().includes('teach')) {
+                structuredResponse = {
+                    structured_content: [
+                        {
+                            heading: "📚 Lesson Overview",
+                            text: `This lesson addresses your query: "${userMessage}". Designed for your current class settings with interactive learning components.`,
+                            id: "lesson_overview"
+                        },
+                        {
+                            heading: "🎯 Learning Objectives",
+                            text: "Students will understand key concepts and apply them practically through guided activities and collaborative work.",
+                            id: "learning_objectives"
+                        },
+                        {
+                            heading: "📖 Content Breakdown",
+                            text: "Main concepts broken down into digestible segments with examples and practice opportunities.",
+                            id: "content_breakdown"
+                        },
+                        {
+                            heading: "🎓 Teaching Strategies",
+                            text: "Interactive methods including group work, discussions, and hands-on activities to engage all learners.",
+                            id: "teaching_strategies"
+                        }
+                    ]
+                };
+            } else if (userMessage.toLowerCase().includes('image') || userMessage.toLowerCase().includes('generate')) {
+                structuredResponse = {
+                    structured_content: [
+                        {
+                            heading: "🎨 Visual Learning Aid",
+                            text: `Generated visual content for: "${userMessage}". This image supports the learning objectives and can be used in presentations.`,
+                            id: "visual_aid"
+                        },
+                        {
+                            heading: "🔍 Usage Guidelines",
+                            text: "Best practices for incorporating this visual aid into your lesson plan and student activities.",
+                            id: "usage_guidelines"
+                        }
+                    ],
+                    image_url: 'https://via.placeholder.com/400x300/667eea/ffffff?text=Generated+Educational+Content'
+                };
             } else {
-                this.handleTextResponse(userMessage);
+                structuredResponse = {
+                    structured_content: [
+                        {
+                            heading: "🔍 Educational Analysis",
+                            text: `Analysis of your question: "${userMessage}". This provides insights based on your class configuration and uploaded materials.`,
+                            id: "educational_analysis"
+                        },
+                        {
+                            heading: "📚 Key Insights",
+                            text: "Important points and recommendations derived from the content analysis, tailored for your teaching context.",
+                            id: "key_insights"
+                        },
+                        {
+                            heading: "💡 Recommendations",
+                            text: "Actionable suggestions for implementing these concepts in your classroom with your current student group.",
+                            id: "recommendations"
+                        }
+                    ]
+                };
             }
+            
+            console.log('📦 Generated structured response:', structuredResponse);
+            this.persistentLog('Generated structured response for simulation');
+            
+            // Handle the structured response
+            this.handleBackendResponse(structuredResponse, userMessage);
+            
         }, 2000);
     }
 
@@ -1544,6 +1800,14 @@ class EducationAssistantUI {
             return;
         }
 
+        // Handle new structured response format
+        if (response.structured_content) {
+            console.log('📦 Structured response detected');
+            this.handleStructuredResponse(response, originalQuestion);
+            return;
+        }
+
+        // Handle legacy text response format
         if (response.text) {
             console.log('Adding text response:', response.text);
             console.log('Full response object:', response);
@@ -1605,6 +1869,347 @@ class EducationAssistantUI {
         
         console.log('Files after response:', this.uploadedFilesList.length);
         console.log('PDF data after response:', this.currentPdfData.length);
+    }
+
+    // New method to handle structured responses
+    handleStructuredResponse(response, originalQuestion) {
+        console.log('📦 Processing structured response with', response.structured_content.length, 'sections');
+        
+        // Create structured response container
+        const responseContainer = this.createStructuredResponseContainer(response.structured_content, originalQuestion, response.image_url);
+        
+        // Add to chat
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message bot-message structured-message';
+        
+        const avatarDiv = document.createElement('div');
+        avatarDiv.className = 'message-avatar';
+        avatarDiv.innerHTML = '<i class="fas fa-robot"></i>';
+        
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'message-content';
+        contentDiv.appendChild(responseContainer);
+        
+        const timeDiv = document.createElement('div');
+        timeDiv.className = 'message-time';
+        timeDiv.textContent = this.getCurrentTime();
+        
+        messageDiv.appendChild(avatarDiv);
+        messageDiv.appendChild(contentDiv);
+        messageDiv.appendChild(timeDiv);
+        
+        this.chatMessages.appendChild(messageDiv);
+        
+        // Scroll to bottom
+        this.scrollToBottom();
+        
+        // Store structured response for canvas functionality
+        this.structuredResponses.push({
+            question: originalQuestion,
+            content: response.structured_content,
+            image_url: response.image_url,
+            timestamp: new Date().toISOString()
+        });
+        
+        this.persistentLog('Structured response added to chat and stored');
+    }
+
+    // Create structured response container
+    createStructuredResponseContainer(structuredContent, originalQuestion, imageUrl) {
+        const container = document.createElement('div');
+        container.className = 'structured-response-container';
+        
+        // Add canvas action button
+        const canvasActions = document.createElement('div');
+        canvasActions.className = 'message-actions';
+        
+        const addToCanvasBtn = document.createElement('button');
+        addToCanvasBtn.className = 'add-to-canvas-btn';
+        addToCanvasBtn.innerHTML = '<i class="fas fa-plus"></i> Add to Canvas';
+        
+        // Use proper event listener instead of onclick attribute
+        addToCanvasBtn.addEventListener('click', () => {
+            this.persistentLog('Add to Canvas button clicked via event listener');
+            // Get current content from response boxes instead of using original data
+            const currentStructuredContent = this.getCurrentStructuredContent(container);
+            this.addStructuredToCanvas(originalQuestion, currentStructuredContent, imageUrl);
+        });
+        
+        canvasActions.appendChild(addToCanvasBtn);
+        container.appendChild(canvasActions);
+        
+        // Create response boxes
+        structuredContent.forEach((section, index) => {
+            const responseBox = this.createResponseBox(section, originalQuestion, index);
+            container.appendChild(responseBox);
+        });
+        
+        return container;
+    }
+
+    // Create individual response box
+    createResponseBox(section, originalQuestion, index) {
+        const boxId = `box_${Date.now()}_${index}`;
+        
+        const box = document.createElement('div');
+        box.className = 'response-box';
+        box.dataset.boxId = boxId;
+        
+        // Header
+        const header = document.createElement('div');
+        header.className = 'response-box-header';
+        header.innerHTML = `
+            <div class="response-box-title">
+                <span>${section.heading}</span>
+            </div>
+            <div class="response-box-actions">
+                <button class="response-box-btn" onclick="educationAssistant.toggleResponseBox('${boxId}')">
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+            </div>
+        `;
+        
+        // Content
+        const content = document.createElement('div');
+        content.className = 'response-box-content';
+        content.innerHTML = section.text;
+        
+        // Follow-up input
+        const followUp = document.createElement('div');
+        followUp.className = 'response-box-follow-up';
+        
+        const inputContainer = document.createElement('div');
+        inputContainer.className = 'follow-up-input-container';
+        
+        const textarea = document.createElement('textarea');
+        textarea.className = 'follow-up-input';
+        textarea.placeholder = `Ask a follow-up question about ${section.heading}...`;
+        textarea.rows = 1;
+        
+        // Add Enter key support
+        textarea.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                this.persistentLog(`Enter key pressed in follow-up textarea for box: ${boxId}`);
+                this.sendFollowUp(boxId, section.id, section.heading, section.text);
+            }
+        });
+        
+        const sendButton = document.createElement('button');
+        sendButton.className = 'follow-up-send-btn';
+        sendButton.innerHTML = '<i class="fas fa-paper-plane"></i>';
+        
+        // Use proper event listener instead of onclick attribute
+        sendButton.addEventListener('click', () => {
+            this.persistentLog(`Follow-up send button clicked for box: ${boxId}`);
+            this.sendFollowUp(boxId, section.id, section.heading, section.text);
+        });
+        
+        inputContainer.appendChild(textarea);
+        inputContainer.appendChild(sendButton);
+        followUp.appendChild(inputContainer);
+        
+        box.appendChild(header);
+        box.appendChild(content);
+        box.appendChild(followUp);
+        
+        // Store box data for follow-up functionality
+        this.activeResponseBoxes.set(boxId, {
+            id: section.id,
+            heading: section.heading,
+            text: section.text,
+            originalQuestion: originalQuestion
+        });
+        
+        return box;
+    }
+
+    // Toggle response box expansion
+    toggleResponseBox(boxId) {
+        const box = document.querySelector(`[data-box-id="${boxId}"]`);
+        if (!box) return;
+        
+        box.classList.toggle('expanded');
+        
+        const icon = box.querySelector('.response-box-actions i');
+        if (box.classList.contains('expanded')) {
+            icon.className = 'fas fa-chevron-up';
+        } else {
+            icon.className = 'fas fa-chevron-down';
+        }
+        
+        this.persistentLog(`Toggled response box: ${boxId}`);
+    }
+
+    // Send follow-up question
+    async sendFollowUp(boxId, sectionId, heading, text) {
+        this.persistentLog(`sendFollowUp called with boxId: ${boxId}, sectionId: ${sectionId}`);
+        
+        const box = document.querySelector(`[data-box-id="${boxId}"]`);
+        if (!box) {
+            this.persistentLog(`Box not found for boxId: ${boxId}`, 'error');
+            return;
+        }
+        
+        const input = box.querySelector('.follow-up-input');
+        const sendBtn = box.querySelector('.follow-up-send-btn');
+        const question = input.value.trim();
+        
+        this.persistentLog(`Follow-up question: "${question}"`);
+        
+        if (!question) {
+            this.showNotification('Please enter a follow-up question', 'error');
+            return;
+        }
+        
+        // Disable input and show loading
+        input.disabled = true;
+        sendBtn.disabled = true;
+        box.classList.add('loading');
+        
+        try {
+            const boxData = this.activeResponseBoxes.get(boxId);
+            if (!boxData) {
+                this.persistentLog(`Box data not found for boxId: ${boxId}`, 'error');
+                throw new Error('Box data not found');
+            }
+            
+            this.persistentLog('Sending follow-up to backend...');
+            const response = await this.sendFollowUpToBackend({
+                message: question,
+                box_id: sectionId,
+                box_heading: boxData.heading,
+                box_text: boxData.text,
+                education_context: this.getEducationContext()
+            });
+            
+            this.persistentLog('Follow-up response received:', response);
+            
+            if (response.updated_text) {
+                // Update the box content
+                const content = box.querySelector('.response-box-content');
+                content.innerHTML = response.updated_text;
+                
+                // Update stored data
+                boxData.text = response.updated_text;
+                this.activeResponseBoxes.set(boxId, boxData);
+                
+                // Clear input
+                input.value = '';
+                this.showNotification('Response updated successfully!', 'success');
+            }
+            
+        } catch (error) {
+            console.error('Follow-up error:', error);
+            this.showNotification('Error sending follow-up question', 'error');
+        } finally {
+            // Re-enable input
+            input.disabled = false;
+            sendBtn.disabled = false;
+            box.classList.remove('loading');
+        }
+    }
+
+    // Get current content from response boxes (including any updates from follow-up questions)
+    getCurrentStructuredContent(container) {
+        const currentContent = [];
+        const responseBoxes = container.querySelectorAll('.response-box');
+        
+        responseBoxes.forEach((box, index) => {
+            const boxId = box.getAttribute('data-box-id');
+            const header = box.querySelector('.response-box-header');
+            const content = box.querySelector('.response-box-content');
+            
+            if (header && content) {
+                const heading = header.textContent.trim();
+                const text = content.innerHTML; // Use innerHTML to preserve formatting
+                
+                // Try to get the original ID from stored data, fallback to index
+                const boxData = this.activeResponseBoxes.get(boxId);
+                const sectionId = boxData ? boxData.id : `section-${index}`;
+                
+                currentContent.push({
+                    id: sectionId,
+                    heading: heading,
+                    text: text
+                });
+            }
+        });
+        
+        this.persistentLog(`getCurrentStructuredContent found ${currentContent.length} sections`);
+        return currentContent;
+    }
+
+    // Send follow-up to backend
+    async sendFollowUpToBackend(data) {
+        const response = await fetch(`${this.BACKEND_URL}/api/chat/follow-up`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        return await response.json();
+    }
+
+    // Add structured response to canvas
+    addStructuredToCanvas(originalQuestion, structuredContent, imageUrl = null) {
+        this.persistentLog(`addStructuredToCanvas called with question: "${originalQuestion}"`);
+        this.persistentLog(`structuredContent:`, structuredContent);
+        
+        // Switch to canvas view
+        this.showCanvasView();
+        
+        // Generate canvas content
+        let canvasHtml = `
+            <div class="canvas-item">
+                <div class="canvas-item-header">
+                    <span>Added on ${this.getCurrentTime()}</span>
+                    <button class="canvas-remove-btn" onclick="educationAssistant.removeFromCanvas(this.parentElement.parentElement)">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="canvas-item-question">
+                    <strong>Q:</strong> ${originalQuestion}
+                </div>
+        `;
+        
+        // Add structured sections
+        structuredContent.forEach(section => {
+            canvasHtml += `
+                <div class="canvas-structured-section">
+                    <h4>${section.heading}</h4>
+                    <div class="canvas-structured-content">${section.text}</div>
+                </div>
+            `;
+        });
+        
+        // Add image if present
+        if (imageUrl) {
+            canvasHtml += `
+                <div class="canvas-item-image">
+                    <img src="${imageUrl}" alt="Generated educational visual" loading="lazy" onclick="educationAssistant.showImageModal('${imageUrl}')">
+                </div>
+            `;
+        }
+        
+        canvasHtml += '</div>';
+        
+        // Add to canvas
+        const placeholder = this.canvasContent.querySelector('.canvas-placeholder');
+        if (placeholder) {
+            placeholder.style.display = 'none';
+        }
+        
+        this.canvasContent.insertAdjacentHTML('beforeend', canvasHtml);
+        
+        this.showNotification('Added to canvas!', 'success');
+        this.persistentLog('Structured response added to canvas successfully');
     }
 
     // Utility methods
@@ -1820,9 +2425,11 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Allow "Add to Notes" buttons to work
         if (e.target.classList.contains('add-to-canvas-btn') || 
-            e.target.closest('.add-to-canvas-btn')) {
-            educationAssistant.persistentLog('Add to Notes button clicked - allowing');
-            return; // Allow add to canvas button clicks
+            e.target.closest('.add-to-canvas-btn') ||
+            e.target.classList.contains('canvas-remove-btn') || 
+            e.target.closest('.canvas-remove-btn')) {
+            educationAssistant.persistentLog('Add to Notes/Remove button clicked - allowing');
+            return; // Allow add to canvas and remove button clicks
         }
         
         // Allow the download canvas button to work
@@ -1838,6 +2445,23 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target.tagName === 'BUTTON' && e.target.id === 'sendButton') {
             educationAssistant.persistentLog('Send button click allowed to proceed normally');
             return; // Allow send button clicks
+        }
+        
+        // Allow toggle buttons to work
+        if (e.target.id === 'showPdfBtn' || 
+            e.target.id === 'showCanvasBtn' ||
+            e.target.classList.contains('toggle-btn')) {
+            educationAssistant.persistentLog(`Toggle button clicked: ${e.target.id || e.target.className}`);
+            return; // Allow toggle button clicks
+        }
+        
+        // Allow response box and follow-up buttons to work
+        if (e.target.classList.contains('response-box-btn') || 
+            e.target.closest('.response-box-btn') ||
+            e.target.classList.contains('follow-up-send-btn') || 
+            e.target.closest('.follow-up-send-btn')) {
+            educationAssistant.persistentLog('Response box/Follow-up button clicked - allowing');
+            return; // Allow response box interaction buttons
         }
         
         // Only prevent actual submit type buttons, not our functional buttons
