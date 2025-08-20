@@ -943,7 +943,23 @@ class EducationAssistantUI {
             // New style - remove DOM element directly
             const element = itemIdOrElement;
             if (element && element.parentNode) {
+                // Check if this element has a canvas ID for removal from array
+                const canvasId = element.getAttribute('data-canvas-id');
+                if (canvasId) {
+                    this.canvasItems = this.canvasItems.filter(item => item.id !== canvasId);
+                    this.persistentLog(`Removed structured item from canvasItems array. Remaining: ${this.canvasItems.length}`);
+                }
+                
                 element.parentNode.removeChild(element);
+                
+                // Show placeholder if no items left
+                if (this.canvasContent.children.length === 0 || 
+                    (this.canvasContent.children.length === 1 && this.canvasContent.querySelector('.canvas-placeholder'))) {
+                    const placeholder = this.canvasContent.querySelector('.canvas-placeholder');
+                    if (placeholder) {
+                        placeholder.style.display = 'block';
+                    }
+                }
             }
         }
         this.showNotification('Removed from notes', 'info');
@@ -2208,8 +2224,40 @@ class EducationAssistantUI {
         
         this.canvasContent.insertAdjacentHTML('beforeend', canvasHtml);
         
+        // Add to canvasItems array for PDF download functionality
+        const canvasItem = {
+            id: `structured-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            question: originalQuestion,
+            response: this.formatStructuredContentForPdf(structuredContent),
+            timestamp: this.getCurrentTime(),
+            imageUrl: imageUrl,
+            type: 'structured'
+        };
+        
+        this.canvasItems.push(canvasItem);
+        this.persistentLog(`Added structured item to canvasItems array. Total items: ${this.canvasItems.length}`);
+        
+        // Add the ID to the DOM element for removal tracking
+        const newCanvasItem = this.canvasContent.lastElementChild;
+        if (newCanvasItem) {
+            newCanvasItem.setAttribute('data-canvas-id', canvasItem.id);
+        }
+        
         this.showNotification('Added to canvas!', 'success');
         this.persistentLog('Structured response added to canvas successfully');
+    }
+
+    // Format structured content for PDF generation
+    formatStructuredContentForPdf(structuredContent) {
+        let formattedText = '';
+        
+        structuredContent.forEach((section, index) => {
+            if (index > 0) formattedText += '\n\n';
+            formattedText += `<h3>${section.heading}</h3>\n`;
+            formattedText += `<div>${section.text}</div>`;
+        });
+        
+        return formattedText;
     }
 
     // Utility methods
